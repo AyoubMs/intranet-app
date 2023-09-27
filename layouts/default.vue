@@ -280,9 +280,11 @@ function controlNav() {
                         </template>
                     </NavElement>
                     <div v-if="obj['openRoute']">
-                        <div v-for="routeElement in obj['items']" class="ml-10 hover:bg-gray-100 cursor-pointer mr-10 py-1 px-2 flex mb-2">
-                            <div class="mr-3"><i :class="[routeElement['icon']]"></i></div>
-                            <div>{{ routeElement['title'] }}</div>
+                        <div v-for="routeElement in obj['items']">
+                            <NuxtLink class="ml-10 hover:bg-gray-100 cursor-pointer mr-10 py-1 px-2 flex mb-2" :to="routeElement['link']">
+                                <div class="mr-3"><i :class="[routeElement['icon']]"></i></div>
+                                <div>{{ routeElement['title'] }}</div>
+                            </NuxtLink>
                         </div>
                     </div>
                 </div>

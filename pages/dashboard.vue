@@ -8,6 +8,100 @@ definePageMeta({
     middleware: ["auth"]
 })
 
+let dashboardElements = [
+    {
+        classElem: 'bg-[#17a2b8]',
+        icon: 'fa-regular fa-calendar-days',
+        type: 'Solde CP',
+        quantity: 0,
+        jours: true
+    },
+    {
+        classElem: 'bg-red-600',
+        icon: 'fa-regular fa-calendar-days',
+        type: 'Solde RJF',
+        quantity: 0,
+        jours: true
+    },
+    {
+        classElem: 'bg-green-600',
+        icon: 'fa-regular fa-file-word',
+        type: 'Mes demandes en cours',
+        quantity: 0,
+        jours: false
+    },
+    {
+        classElem: 'bg-yellow-600',
+        icon: 'fa-solid fa-folder-open',
+        type: 'Total de mes demandes',
+        quantity: 0,
+        jours: false
+    },
+]
+
+let demandCards = [
+    {
+        textColor: 'text-black',
+        classIcon: 'fa-solid fa-envelope',
+        classFooter: 'bg-[#e5ad06]',
+        classHover: 'hover:bg-[#d9a406]',
+        classElem: 'bg-[#FFC107]',
+        quantity: 0,
+        title: 'Demandes non-traitées',
+        footer: 'Traiter les demandes'
+    },
+    {
+        textColor: 'text-white',
+        classIcon: 'fa-solid fa-rotate',
+        classFooter: 'hover:bg-[#006ee5]',
+        classHover: 'bg-[#0069d9]',
+        classElem: 'bg-[#007bff]',
+        quantity: 0,
+        title: 'Demandes recours à traiter',
+        footer: 'Traiter les demandes'
+    },
+    {
+        textColor: 'text-white',
+        classIcon: 'fa-solid fa-triangle-exclamation',
+        classFooter: 'bg-[#616970]',
+        classHover: 'hover:bg-[#5C646A]',
+        classElem: 'bg-[#6C757D]',
+        quantity: 0,
+        title: 'Demandes annulées à traiter',
+        footer: 'Traiter les demandes d\'annulation'
+    },
+    {
+        textColor: 'text-white',
+        classIcon: 'fa-solid fa-square-check',
+        classFooter: 'bg-[#24963E]',
+        classHover: 'hover:bg-[#228E3B]',
+        classElem: 'bg-[#28A745]',
+        quantity: 0,
+        title: 'Demandes validées',
+        footer: 'Consulter'
+    },
+    {
+        textColor: 'text-white',
+        classIcon: 'fa-solid fa-circle-minus',
+        classFooter: 'bg-[#C6303E]',
+        classHover: 'hover:bg-[#BB2D3B]',
+        classElem: 'bg-[#DC3545]',
+        quantity: 0,
+        title: 'Demandes rejetées',
+        footer: 'Consulter'
+    },
+    {
+        textColor: 'text-white',
+        classIcon: 'fa-solid fa-circle-info',
+        classFooter: 'bg-[#1591A5]',
+        classHover: 'hover:bg-[#148A9D]',
+        classElem: 'bg-[#17A2B8]',
+        quantity: 0,
+        title: 'Total des demandes traitées',
+        footer: 'Consulter'
+    },
+]
+
 </script>
 
 <template>
@@ -15,100 +109,25 @@ definePageMeta({
     <div class="p-4">
         <div class="font-bold text-3xl">Tableaux de bord</div>
         <CardContainer>
-            <DashboardElement :class-elem="'bg-[#17a2b8]'">
+            <DashboardElement v-for="dashboardElement in dashboardElements" :class-elem="dashboardElement['classElem']">
                 <template #icon>
-                    <i class="fa-regular fa-calendar-days text-4xl" style="color: #ffffff;"></i>
+                    <i :class="[dashboardElement['icon']]" class="text-4xl" style="color: #ffffff;"></i>
                 </template>
-                <template #type>Solde CP</template>
-                <template #footer><span class="font-bold">0</span> jours</template>
-            </DashboardElement>
-            <DashboardElement :class-elem="'bg-red-600'">
-                <template #icon>
-                    <i class="fa-regular fa-calendar-days text-4xl" style="color: #ffffff;"></i>
-                </template>
-                <template #type>Solde RJF</template>
-                <template #footer><span class="font-bold">0</span> jours</template>
-            </DashboardElement>
-            <DashboardElement :class-elem="'bg-green-600'">
-                <template #icon>
-                    <i class="fa-regular fa-file-word text-4xl" style="color: #ffffff;"></i>
-                </template>
-                <template #type>Mes demandes en cours</template>
-                <template #footer><span class="font-bold">0</span></template>
-            </DashboardElement>
-            <DashboardElement :class-elem="'bg-yellow-600'">
-                <template #icon>
-                    <i class="fa-solid fa-folder-open text-4xl" style="color: #ffffff;"></i>
-                </template>
-                <template #type>Total de mes demandes</template>
-                <template #footer><span class="font-bold">0</span></template>
+                <template #type>{{ dashboardElement['type'] }}</template>
+                <template #footer><span class="font-bold">{{ dashboardElement['quantity'] }}</span> {{ dashboardElement['jours'] ? 'jours' : '' }}</template>
             </DashboardElement>
         </CardContainer>
         <CardContainer>
-            <DemandCard :text-color="'text-black'" :class-icon="'fa-solid fa-envelope'" :class-footer="'bg-[#e5ad06]'" :class-hover="'hover:bg-[#d9a406]'" :class-elem="'bg-[#FFC107]'">
+            <DemandCard v-for="demandCard in demandCards" :text-color="demandCard['textColor']" :class-icon="demandCard['classIcon']"
+                        :class-footer="demandCard['classFooter']" :class-hover="demandCard['classHover']" :class-elem="demandCard['classElem']">
                 <template #body>
                     <div class="ml-3 mt-3 mb-6">
-                        <span class="text-3xl font-bold">0</span>
-                        <div>Demandes non-traitées</div>
+                        <span class="text-3xl font-bold">{{ demandCard['quantity'] }}</span>
+                        <div>{{ demandCard['title'] }}</div>
                     </div>
                 </template>
                 <template #footer>
-                    Traiter les demandes
-                </template>
-            </DemandCard>
-            <DemandCard :text-color="'text-white'" :class-icon="'fa-solid fa-rotate'" :class-hover="'bg-[#0069d9]'" :class-footer="'hover:bg-[#006ee5]'" :class-elem="'bg-[#007bff]'">
-                <template #body>
-                    <div class="ml-3 mt-3 mb-6">
-                        <span class="text-3xl font-bold">0</span>
-                        <div>Demandes recours à traiter</div>
-                    </div>
-                </template>
-                <template #footer>
-                    Traiter les demandes
-                </template>
-            </DemandCard>
-            <DemandCard :text-color="'text-white'" :class-icon="'fa-solid fa-triangle-exclamation'" :class-footer="'bg-[#616970]'" :class-hover="'hover:bg-[#5C646A]'" :class-elem="'bg-[#6C757D]'">
-                <template #body>
-                    <div class="ml-3 mt-3 mb-6">
-                        <span class="text-3xl font-bold">0</span>
-                        <div>Demandes annulées à traiter</div>
-                    </div>
-                </template>
-                <template #footer>
-                    Traiter les demandes d'annulation
-                </template>
-            </DemandCard>
-            <DemandCard :text-color="'text-white'" :class-icon="'fa-solid fa-square-check'" :class-footer="'bg-[#24963E]'" :class-hover="'hover:bg-[#228E3B]'" :class-elem="'bg-[#28A745]'">
-                <template #body>
-                    <div class="ml-3 mt-3 mb-6">
-                        <span class="text-3xl font-bold">0</span>
-                        <div>Demandes validées</div>
-                    </div>
-                </template>
-                <template #footer>
-                    Consulter
-                </template>
-            </DemandCard>
-            <DemandCard :text-color="'text-white'" :class-icon="'fa-solid fa-circle-minus'" :class-footer="'bg-[#C6303E]'" :class-hover="'hover:bg-[#BB2D3B]'" :class-elem="'bg-[#DC3545]'">
-                <template #body>
-                    <div class="ml-3 mt-3 mb-6">
-                        <span class="text-3xl font-bold">0</span>
-                        <div>Demandes rejetées</div>
-                    </div>
-                </template>
-                <template #footer>
-                    Consulter
-                </template>
-            </DemandCard>
-            <DemandCard :text-color="'text-white'" :class-icon="'fa-solid fa-circle-info'" :class-footer="'bg-[#1591A5]'" :class-hover="'hover:bg-[#148A9D]'" :class-elem="'bg-[#17A2B8]'">
-                <template #body>
-                    <div class="ml-3 mt-3 mb-6">
-                        <span class="text-3xl font-bold">0</span>
-                        <div>Total des demandes traitées</div>
-                    </div>
-                </template>
-                <template #footer>
-                    Consulter
+                    {{ demandCard['footer'] }}
                 </template>
             </DemandCard>
         </CardContainer>

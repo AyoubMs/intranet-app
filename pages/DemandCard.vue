@@ -10,7 +10,7 @@
         </div>
         <div :class="[classFooter, classHover]" class="text-center py-1 cursor-pointer">
             <slot name="footer"></slot>
-            <i class="fa-solid fa-circle-right"></i>
+            <i class="fa-solid fa-circle-right ml-2"></i>
         </div>
     </div>
 </template>
