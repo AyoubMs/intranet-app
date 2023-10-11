@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {definePageMeta} from "#imports";
-import CardContainer from "~/Components/CardContainer.vue";
-import DashboardElement from "~/Components/DashboardElement.vue";
-import DemandCard from "~/pages/DemandCard.vue";
+import CardContainer from "~/components/CardContainer.vue";
+import DashboardElement from "~/components/DashboardElement.vue";
+import DemandCard from "~/components/DemandCard.vue";
 
 definePageMeta({
     middleware: ["auth"]

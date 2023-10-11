@@ -2,14 +2,14 @@
 
 import {useAuth} from "~/composables/useAuth";
 import Cookies from "js-cookie";
-import NavElement from "~/Components/NavElement.vue";
+import NavElement from "~/components/NavElement.vue";
+import {useUserStore} from "~/stores/UserStore";
 
 const {$apiFetch}: any = useNuxtApp()
 
 let openNav = ref(false)
 
-const user = ref(null)
-// const headers = Headers()
+let user = useUserStore()
 
 const {removeUser, setUser} = useAuth()
 
@@ -17,24 +17,20 @@ const route = useRoute()
 
 onMounted(async () => {
     if (route.path !== '/') {
-        await $apiFetch('/user').then((data: any) => {
-            setUser(data);
-            console.log("here")
-            user.value = data;
-        }).catch((err: any) => console.log(err))
+        await user.fetchUser($apiFetch, setUser);
     }
 })
 
 async function logout() {
     try {
         await $apiFetch('/logout', {
-            method: 'POST'
+            method: 'POST',
+            body: {user: JSON.stringify(user)}
         })
     } catch (err: any) {
         console.log(err)
     } finally {
         removeUser();
-        Cookies.remove('XSRF-TOKEN');
         window.location.pathname = '/'
     }
 }
@@ -264,7 +260,7 @@ function controlNav() {
                                  alt=""/>
                         </div>
                         <div v-if="!openNav">
-                            {{ JSON.parse(user)?.name }}
+                            {{ user.user?.last_name }} {{ user.user?.first_name }}
                         </div>
                     </div>
                 </div>
@@ -293,7 +289,7 @@ function controlNav() {
         <div class="flex-col w-screen justify-center items-center bg-gray-100 min-h-screen text-gray-900">
             <div class="bg-white w-full flex pr-10 pl-4 py-4" v-if="$route.path !== '/'">
                 <div class="mr-auto"><i class="fa-solid fa-bars cursor-pointer" @click.prevent="controlNav"></i></div>
-                <div class="cursor-pointer" @click.prevent="logout">Logout</div>
+                <div v-if="user.user" class="cursor-pointer" @click.prevent="logout">Logout</div>
             </div>
             <slot/>
         </div>

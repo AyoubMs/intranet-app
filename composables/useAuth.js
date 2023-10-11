@@ -13,7 +13,7 @@ export function useAuth() {
 
     const isLoggedIn = computed(() => {
         if (process.client) {
-            return !!localStorage.getItem('user')
+            return JSON.parse(localStorage.getItem('user'))?.name !== ''
         }
     })
 

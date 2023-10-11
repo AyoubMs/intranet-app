@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import Cookies from "js-cookie"
+import {definePageMeta} from "#imports";
 
 const { $apiFetch } : any = useNuxtApp()
 
@@ -10,9 +11,11 @@ async function csrf() {
 
 async function login() {
     await csrf();
-    await navigateTo(`https://intranet.test/auth/redirect?token=${Cookies.get('XSRF-TOKEN')}`, {
-        external: true,
-    })
+    if (process.client) {
+        await navigateTo(`https://intranet.test/auth/redirect?token=${localStorage.getItem('uuid')}`, {
+            external: true,
+        })
+    }
 }
 
 </script>
