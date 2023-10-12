@@ -21,15 +21,7 @@ export let useTeamStore = defineStore('teams', {
             }).catch((err) => console.log(err));
         },
         selectTeam(teamData) {
-            console.log(teamData)
-            switch (typeof(teamData)) {
-                case 'string':
-                    this.selectedTeams.push(teamData)
-                    break;
-                case 'object':
-                    this.selectedTeams.push(teamData.join(''))
-                    break;
-            }
+            this.selectedTeams.push(teamData)
         },
         removeTeam(teamData) {
             this.selectedTeams = this.selectedTeams.filter((data) => data !== teamData)
