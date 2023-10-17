@@ -286,7 +286,7 @@ function controlNav() {
                 </div>
             </div>
         </nav>
-        <div class="flex-col w-screen justify-center items-center bg-gray-100 min-h-screen text-gray-900">
+        <div class="flex-col w-screen justify-center items-center bg-gray-100 h-screen overflow-y-auto text-gray-900">
             <div class="bg-white w-full flex pr-10 pl-4 py-4" v-if="$route.path !== '/'">
                 <div class="mr-auto"><i class="fa-solid fa-bars cursor-pointer" @click.prevent="controlNav"></i></div>
                 <div v-if="user.user" class="cursor-pointer" @click.prevent="logout">Logout</div>

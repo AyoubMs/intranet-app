@@ -7,7 +7,7 @@ let selectedLanguages = ref([])
 export let useLanguagesStore = defineStore('languages', {
     state() {
         return {
-            languages, selectedLanguages
+            languages, selectedLanguages, loadingLanguages: false
         }
     },
 
@@ -25,6 +25,12 @@ export let useLanguagesStore = defineStore('languages', {
         },
         removeLanguage(languageData) {
             this.selectedLanguages = this.selectedLanguages.filter((data) => data !== languageData)
-        }
+        },
+        loadLanguagesData() {
+            this.loadingLanguages = true;
+        },
+        finishLoadingLanguagesData() {
+            this.loadingSourcingProviders = false;
+        },
     }
 })

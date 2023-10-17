@@ -10,6 +10,8 @@ import {useLanguagesStore} from "~/stores/LanguagesStore";
 import {useInputStore} from "~/stores/InputStore";
 import NCCTable from "~/components/NCCTable.vue";
 import {useUserStore} from "~/stores/UserStore";
+import {debounce} from "lodash";
+import Modal from "~/components/Modal.vue";
 
 definePageMeta({
   middleware: ['auth']
@@ -36,11 +38,14 @@ let filterData = ref({
   status: inputStore.status
 })
 
+const searchUsers = ref(null)
+
 onMounted(async () => {
-  await teamStore.fetchTeams($apiFetch, inputStore.status)
-  await profilesStore.fetchProfiles($apiFetch)
-  await languageStore.fetchLanguages($apiFetch)
-  await userStore.fetchUsers($apiFetch, inputStore.status, filterData.value)
+  await teamStore.fetchTeams($apiFetch, inputStore.status).catch(err => console.log(err))
+  await profilesStore.fetchProfiles($apiFetch).catch(err => console.log(err))
+  await languageStore.fetchLanguages($apiFetch).catch(err => console.log(err))
+  await userStore.fetchUsers($apiFetch, inputStore.status, filterData.value).catch(err => console.log(err))
+  await userStore.fetchUserByRegNumber($apiFetch, searchUsers.value).catch(err => console.log(err))
   console.log(userStore.users)
 })
 
@@ -54,7 +59,7 @@ const searchBackend = async () => {
     status: inputStore.status
   }
   inputStore.loadTableData();
-  await userStore.fetchUsers($apiFetch, inputStore.status, filterData.value)
+  await userStore.fetchUsers($apiFetch, inputStore.status, filterData.value).catch(err => console.log(err))
   inputStore.finishLoadingTableData()
   console.log(userStore.users)
 }
@@ -74,6 +79,34 @@ let typeStatus = [
   }
 ]
 
+const fetchUsersPage = async ({url, active}: { url: any, active: boolean }) => {
+  if (url && !active) {
+    let page = url.split('=')[1]
+    inputStore.loadTableData();
+    await userStore.fetchUsers($apiFetch, inputStore.status, filterData.value, page).catch(err => console.log(err))
+    inputStore.finishLoadingTableData()
+  }
+}
+
+const searchUsersByRegNumber = async (regNumber: string | null) => {
+  await debounce(async () => {
+    inputStore.loadTableData()
+    await userStore.fetchUserByRegNumber($apiFetch, regNumber).catch(err => console.log(err))
+    inputStore.finishLoadingTableData()
+    console.log(userStore.searchedUser)
+  }, 1000)()
+}
+
+watch(searchUsers, () => {
+  searchUsersByRegNumber(searchUsers.value);
+})
+
+let showModal = ref(false);
+
+let newUser = () => {
+    showModal.value = true;
+}
+
 </script>
 
 <template>
@@ -83,7 +116,7 @@ let typeStatus = [
     <div class="flex mt-6">
       <ButtonWithIcon
           classes="mr-auto bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 active:bg-cyan-900 focus:ring-cyan-500"
-          icon-class="fa-solid fa-user-plus">
+          icon-class="fa-solid fa-user-plus" @click="newUser()">
         Nouvel Utilisateur
       </ButtonWithIcon>
 
@@ -104,9 +137,9 @@ let typeStatus = [
           <div class="flex w-full">
             <div class="mb-6">
               <label class="block mb-2 uppercase font-bold text-xs text-gray-700 mx-3"
-                     for="statut"
+                     for="status"
               >
-                Statut
+                Status
               </label>
               <div class="flex">
                 <RadioInput v-for="elem in typeStatus" :title="elem.title" :val="elem.val"/>
@@ -131,8 +164,41 @@ let typeStatus = [
       </div>
     </div>
   </div>
-  <div class="p-6">
-    <NCCTable />
+  <div class="p-6 bg-white mx-6">
+    <div class="flex justify-end">
+      <div class="mb-6 flex">
+        <label class="block mb-2 my-auto font-bold text-gray-700 mx-4"
+               for="search"
+        >
+          Search:
+        </label>
+        <input class="border border-gray-400 p-1 w-full"
+               type="text"
+               name="search"
+               id="search"
+               required
+               v-model="searchUsers"
+        />
+      </div>
+    </div>
+    <NCCTable/>
+    <div v-if="userStore.searchedUser === 'null'" class="flex justify-end mt-3 mx-auto">
+      <div v-for="(link, index) in userStore.users?.links"
+           class="border w-6 text-center"
+           :class="{
+                '!bg-cyan-500 !text-white': link?.active,
+                'hover:bg-cyan-500 hover:text-white cursor-pointer': link?.url && !link?.active,
+                }"
+           @click="fetchUsersPage(link)">
+        <div v-if="index == 0"><i class="fa-solid fa-chevron-left"></i></div>
+        <div v-else-if="index > 0 && Number(link?.label)">{{ link?.label }}</div>
+        <div v-else-if="link?.label === '...'">...</div>
+        <div v-else-if="!Number(link?.label) && link?.label !== '...'"><i
+            class="fa-solid fa-chevron-right"></i></div>
+      </div>
+    </div>
   </div>
+
+    <Modal :show="showModal" @close="showModal = false" />
 </template>
 
