@@ -12,7 +12,7 @@ export let useProfilesStore = defineStore('profiles', {
     },
 
     actions: {
-        async fetchProfiles(fetchFunc, search) {
+        async fetchProfiles(fetchFunc, search='') {
             await fetchFunc('/data', {
                 method: 'POST',
                 body: {type: 'profile', search}

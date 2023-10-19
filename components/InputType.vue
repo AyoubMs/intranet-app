@@ -5,12 +5,12 @@ import {useProfilesStore} from "~/stores/ProfilesStore.js";
 import {useLanguagesStore} from "~/stores/LanguagesStore.js";
 import {useInputStore} from "~/stores/InputStore.js";
 import {debounce} from "lodash";
+import {useUserStore} from "~/stores/UserStore.js";
 
 const props = defineProps({
     title: String,
     val: String,
-    type: String,
-    data: Object
+    type: String
 })
 
 const {$apiFetch} = useNuxtApp()
@@ -22,6 +22,26 @@ let teamStore = useTeamStore()
 let profilesStore = useProfilesStore()
 
 let languageStore = useLanguagesStore()
+
+let data = ref(null)
+
+onMounted(async () => {
+    switch(props.val) {
+        case 'team':
+            await teamStore.fetchTeams($apiFetch, inputStore.status).catch(err => console.log(err))
+            data.value = teamStore.teams;
+            break;
+        case 'profile':
+            await profilesStore.fetchProfiles($apiFetch).catch(err => console.log(err))
+            data.value = profilesStore.profiles;
+            break;
+        case 'language':
+            await languageStore.fetchLanguages($apiFetch, '').catch(err => console.log(err))
+            data.value = languageStore.languages
+            break;
+    }
+})
+
 
 let getTag = (tag, type) => {
     switch (type) {
@@ -79,6 +99,7 @@ let inputStore = useInputStore();
 watch(inputStore, async function () {
     if (props.val === 'team') {
         await teamStore.fetchTeams($apiFetch, inputStore.status)
+        data.value = teamStore.teams;
     }
 }, {deep: true})
 
@@ -102,12 +123,15 @@ const searchDropDown = () => {
         switch (props.val) {
             case 'team':
                 await teamStore.fetchTeams($apiFetch, inputStore.status, searchInput.value)
+                data.value = teamStore.teams;
                 break;
             case 'profile':
                 await profilesStore.fetchProfiles($apiFetch, searchInput.value)
+                data.value = profilesStore.profiles;
                 break;
             case 'language':
                 await languageStore.fetchLanguages($apiFetch, searchInput.value)
+                data.value = languageStore.languages;
                 break;
         }
         controlWithSearch.value = true

@@ -15,6 +15,12 @@ const {$apiFetch} = useNuxtApp()
 let inputStore = useInputStore()
 let teamStore = useTeamStore()
 
+const emits = defineEmits(['update:modelValue'])
+
+onMounted(() => {
+    emits('update:modelValue', inputStore.sexe)
+})
+
 const selectStatus = async (val) => {
     inputStore.assignStatus(val);
     inputStore.loadTeamsData();

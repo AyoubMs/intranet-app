@@ -55,7 +55,7 @@ let userStore = useUserStore()
             <td class="px-2 border-2">{{ user?.primary_language?.name }}</td>
             <td class="px-2 border-2">{{ user?.solde_cp }}</td>
             <td class="px-2 border-2">{{ user?.solde_rjf }}</td>
-            <Actions />
+            <Actions :user="user" />
         </tr>
         </tbody>
     </table>

@@ -7,13 +7,12 @@ let sourcingTypes = ref(null)
 let sourcingProviders = ref(null)
 let nationalities = ref(null)
 let familySituations = ref(null)
-
+let showModal = ref(false);
 
 export let useInputStore = defineStore('inputs', {
     state() {
         return {
-            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, loadingIdentityTypes: false, loadingSourcingTypes: false, loadingSourcingProviders: false,
-            loadingNationalities: false, familySituations, loadingFamilySituations: false, loadingForm: false
+            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, sendingUser: false, showModal
         }
     },
 
@@ -76,41 +75,11 @@ export let useInputStore = defineStore('inputs', {
         finishLoadingTableData() {
             this.loadingTable = false;
         },
-        loadIdentityTypesData() {
-            this.loadingIdentityTypes = true;
+        beginSendingUserData() {
+            this.sendingUser = true;
         },
-        finishLoadingIdentityTypesData() {
-            this.loadingIdentityTypes = false;
-        },
-        loadSourcingTypesData() {
-            this.loadingSourcingTypes = true;
-        },
-        finishLoadingSourcingTypesData() {
-            this.loadingSourcingTypes = false;
-        },
-        loadSourcingProvidersData() {
-            this.loadingSourcingProviders = true;
-        },
-        finishLoadingSourcingProvidersData() {
-            this.loadingSourcingProviders = false;
-        },
-        loadNationalitiesData() {
-            this.loadingNationalities = true;
-        },
-        finishLoadingNationalitiesData() {
-            this.loadingNationalities = false;
-        },
-        loadFamilySituationsData() {
-            this.loadingFamilySituations = true;
-        },
-        finishLoadingFamilySituationsData() {
-            this.loadingFamilySituations = false;
-        },
-        loadFormData() {
-            this.loadingForm = true;
-        },
-        finishLoadingFormData() {
-            this.loadingForm = false;
+        finishSendingUserData() {
+            this.sendingUser = false;
         },
     }
 })
