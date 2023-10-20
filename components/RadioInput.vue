@@ -7,7 +7,8 @@ import {useProfilesStore} from "~/stores/ProfilesStore.js";
 const props = defineProps({
     title: String,
     val: String,
-    modelValue: String
+    modelValue: String,
+    data: String
 })
 
 const {$apiFetch} = useNuxtApp()
@@ -18,6 +19,8 @@ let teamStore = useTeamStore()
 const emits = defineEmits(['update:modelValue'])
 
 onMounted(() => {
+    console.log(props.data)
+    inputStore.assignSexe(props.data === 'F' ? 'femme' : 'homme')
     emits('update:modelValue', inputStore.sexe)
 })
 

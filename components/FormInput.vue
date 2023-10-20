@@ -6,8 +6,9 @@ const props = defineProps({
     val: String,
     modelValue: String,
     type: String,
-    errors: Object,
-    data: String
+    data: String | Number,
+    edit: Boolean,
+    disabled: Boolean
 })
 
 const {$apiFetch} = useNuxtApp()
@@ -17,27 +18,22 @@ const languageStore = useLanguagesStore()
 const emits = defineEmits(['update:modelValue'])
 
 onMounted(async () => {
-    if (props.val.includes('identity')) {
-        await inputStore.fetchIdentityTypes($apiFetch)
-        emits('update:modelValue', inputStore.identityTypes[0]);
-    } else if (props.val.includes('language')) {
+    if (props.val.includes('language')) {
         await languageStore.fetchLanguages($apiFetch, '')
         emits('update:modelValue', languageStore.languages[0])
-    } else if (props.val.includes('sourcing')) {
-        await inputStore.fetchSourcingTypes($apiFetch)
-        emits('update:modelValue', inputStore.sourcingTypes[0])
     } else if (props.val.includes('nationalities')) {
         await inputStore.fetchNationalities($apiFetch)
         emits('update:modelValue', inputStore.nationalities[0]);
     } else if (props.val.includes('fournisseur')) {
         await inputStore.fetchSourcingProviders($apiFetch)
-        emits('update:modelValue', inputStore.sourcingProviders[0]);
+        emits('update:modelValue', inputStore.sourcingProviders[0].split(' ').filter(data => data !== '').join(' '));
     } else if (props.val.includes('situation familiale')) {
         await inputStore.fetchFamilySituations($apiFetch)
         emits('update:modelValue', inputStore.familySituations[0])
     }
-
-    emits('update:modelValue', props.data)
+    if (props.data || props.edit) {
+        emits('update:modelValue', props.data)
+    }
 })
 
 const getItems = (type) => {
@@ -61,7 +57,7 @@ const getItemOption = (item, type) => {
 }
 
 const getType = (val) => {
-    if (val.includes('nombre enfants') || val.includes('Numéro CNSS') || val.includes('téléphone')) {
+    if (val.includes('nombre enfants') || val.includes('Numéro CNSS') || val.includes('téléphone') || val.includes('solde')) {
         return 'number';
     } else if (val.includes('date')) {
         return 'date';
@@ -79,21 +75,22 @@ const getType = (val) => {
         >
             {{ val }}
         </label>
-        <div v-if="errors && !modelValue" v-for="error in errors" class="text-xs text-red-500">{{ error }}</div>
+        <slot></slot>
         <input v-if="type !== 'select' && !val.includes('address') && !val.includes('comment')"
                class="rounded-md border border-gray-400 p-2 w-full"
                :type="getType(val)"
                :name="val"
                :id="val"
                :value="modelValue"
+               :disabled="disabled === undefined ? false : disabled"
                @input="$emit('update:modelValue', $event.target.value)"
                required
         />
         <textarea v-if="val.includes('address') || val.includes('comment')"
                   class="w-full border border-black p-1 rounded-md"
                   @input="$emit('update:modelValue', $event.target.value)" :value="modelValue"></textarea>
-        <select class="border w-full p-2 border-black rounded-md" v-if="type === 'select'"
-                @change="$emit('update:modelValue', $event.target.value)" :value="modelValue">
+        <select class="border w-full p-2 border-black rounded-md" v-if="type === 'select'" :value="modelValue"
+                @change="$emit('update:modelValue', $event.target.value)">
             <option v-for="item in getItems(val)">{{ getItemOption(item, val) }}</option>
         </select>
     </div>

@@ -4,15 +4,31 @@ let user = ref(null)
 let users = ref(null)
 let searchedUser = ref('')
 let addingUserErrors = ref([])
+let editingUserErrors = ref([])
 
 export let useUserStore = defineStore('user', {
     state() {
         return {
-            user, users, searchedUser, addingUserErrors
+            user, users, searchedUser, addingUserErrors, editingUserErrors
         }
     },
 
     actions: {
+        async editUser(fetchFunc, body) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'edit_user', body}
+            }).then(data => {
+                switch(typeof(data)) {
+                    case 'object':
+                        this.editingUserErrors = data;
+                        break;
+                    case 'string':
+                        this.editingUserErrors = [];
+                        break;
+                }
+            }).catch(err => console.log(err))
+        },
         async addUser(fetchFunc, body) {
             await fetchFunc('/data', {
                 method: 'POST',
@@ -52,6 +68,12 @@ export let useUserStore = defineStore('user', {
             }).then((data) => {
                 this.searchedUser = data;
             }).catch((err) => console.log(err))
+        },
+        refreshAddingUserErrors() {
+            this.addingUserErrors = [];
+        },
+        refreshEditingUserErrors() {
+            this.editingUserErrors = [];
         }
     }
 })

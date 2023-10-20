@@ -42,7 +42,7 @@ let userStore = useUserStore()
             <td class="px-2 border-2">{{ userStore.searchedUser?.primary_language?.name }}</td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.solde_cp }}</td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.solde_rjf }}</td>
-            <Actions />
+            <Actions :user="userStore.searchedUser" />
         </tr>
         <tr class="text-center" v-if="userStore.searchedUser === 'null'" v-for="user in userStore.users?.data">
             <td class="px-2 border-2"></td>

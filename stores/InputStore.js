@@ -10,7 +10,7 @@ let familySituations = ref(null)
 let showModal = ref(false);
 
 export let useInputStore = defineStore('inputs', {
-    state() {
+    state(){
         return {
             dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, sendingUser: false, showModal
         }
