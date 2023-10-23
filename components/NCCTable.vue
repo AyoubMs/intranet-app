@@ -36,7 +36,7 @@ let userStore = useUserStore()
                 }}
             </td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.role?.name }}</td>
-            <td class="px-2 border-2">{{ userStore.searchedUser?.operation?.name }}</td>
+            <td class="px-2 border-2">{{ userStore.searchedUser?.operations?.map(data => data.name).join(',') }}</td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.team_type?.name }}</td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.department?.name }}</td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.primary_language?.name }}</td>
@@ -49,7 +49,7 @@ let userStore = useUserStore()
             <td class="px-2 border-2">{{ user?.matricule }}</td>
             <td class="px-2 border-2">{{ user?.first_name }} / {{ user?.last_name }}</td>
             <td class="px-2 border-2">{{ user?.role?.name }}</td>
-            <td class="px-2 border-2">{{ user?.operation?.name }}</td>
+            <td class="px-2 border-2">{{ user?.operations?.map(data => data.name).join(',') }}</td>
             <td class="px-2 border-2">{{ user?.team_type?.name }}</td>
             <td class="px-2 border-2">{{ user?.department?.name }}</td>
             <td class="px-2 border-2">{{ user?.primary_language?.name }}</td>

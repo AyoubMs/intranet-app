@@ -1,6 +1,7 @@
 <script setup>
 import {useInputStore} from "~/stores/InputStore.js";
 import {useLanguagesStore} from "~/stores/LanguagesStore.js";
+import {useProfilesStore} from "~/stores/ProfilesStore.js";
 
 const props = defineProps({
     val: String,
@@ -15,6 +16,7 @@ const {$apiFetch} = useNuxtApp()
 
 const inputStore = useInputStore()
 const languageStore = useLanguagesStore()
+const profileStore = useProfilesStore()
 const emits = defineEmits(['update:modelValue'])
 
 onMounted(async () => {
@@ -30,6 +32,9 @@ onMounted(async () => {
     } else if (props.val.includes('situation familiale')) {
         await inputStore.fetchFamilySituations($apiFetch)
         emits('update:modelValue', inputStore.familySituations[0])
+    } else if (props.val.includes('profile')) {
+        await profileStore.fetchProfiles($apiFetch)
+        emits('update:modelValue', profileStore.profiles.filter(data => data.includes('Conseiller'))[0])
     }
     if (props.data || props.edit) {
         emits('update:modelValue', props.data)
@@ -49,10 +54,12 @@ const getItems = (type) => {
         return inputStore.sourcingProviders;
     } else if (type.includes('situation familiale')) {
         return inputStore.familySituations;
+    } else if (type.includes('profile')) {
+        return profileStore.profiles;
     }
 }
 
-const getItemOption = (item, type) => {
+const getItemOption = (item) => {
     return item;
 }
 
@@ -70,7 +77,7 @@ const getType = (val) => {
 
 <template>
     <div class="w-1/2 mx-3" :class="{'mx-6': val.includes('comment'), 'mx-3': !val.includes('comment')}">
-        <label class="block mb-2 font-bold capitalize text-xs text-gray-700"
+        <label class="block mb-[1rem] font-bold capitalize text-xs text-gray-700"
                :for="val"
         >
             {{ val }}
@@ -91,7 +98,7 @@ const getType = (val) => {
                   @input="$emit('update:modelValue', $event.target.value)" :value="modelValue"></textarea>
         <select class="border w-full p-2 border-black rounded-md" v-if="type === 'select'" :value="modelValue"
                 @change="$emit('update:modelValue', $event.target.value)">
-            <option v-for="item in getItems(val)">{{ getItemOption(item, val) }}</option>
+            <option v-for="item in getItems(val)">{{ getItemOption(item) }}</option>
         </select>
     </div>
 </template>

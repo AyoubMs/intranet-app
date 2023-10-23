@@ -2,10 +2,12 @@
 import FormInput from "~/components/FormInput.vue";
 import {useInputStore} from "~/stores/InputStore";
 import {useUserStore} from "~/stores/UserStore";
+import InputType from "~/components/InputType.vue";
 
 const props = defineProps({
     show: Boolean,
     edit: Boolean,
+    affectation: Boolean,
     user: Object
 })
 
@@ -15,7 +17,7 @@ let userStore = useUserStore()
 
 const {$apiFetch} = useNuxtApp()
 
-let formData = ref({
+let addOrEditFormData = ref({
     past_matricule: props.user?.matricule,
     matricule: null,
     email_1: null,
@@ -46,6 +48,16 @@ let formData = ref({
     edit_matricule: props.edit
 })
 
+let affectationFormData = ref({
+    matricule: null,
+    name: null,
+    profile: null,
+    team: null,
+    date_debut: null,
+    date_debut_formation: null,
+    date_fin_formation: null,
+})
+
 let cinNumber : any = ref(props.user?.identity_types?.filter((data:any) => data?.name === 'CIN')[0]?.identity_number)
 let passportNumber : any = ref(props.user?.identity_types?.filter((data:any) => data?.name === 'Passeport')[0]?.identity_number)
 let carteSejourNumber : any = ref(props.user?.identity_types?.filter((data:any) => data?.name === 'Carte sejour')[0]?.identity_number);
@@ -58,8 +70,8 @@ watch(userStore.addingUserErrors, () => {
     console.log(userStore.addingUserErrors)
 }, { deep: true })
 
-watch(formData, () => {
-    console.log(formData.value)
+watch(affectationFormData, () => {
+    console.log(affectationFormData.value)
 }, {deep: true})
 
 const emit = defineEmits(["close"]);
@@ -72,7 +84,7 @@ const closeModal = () => {
 
 const sendFormDataToBackend = async () => {
     inputStore.beginSendingUserData()
-    await userStore.addUser($apiFetch, formData.value).then(() => {
+    await userStore.addUser($apiFetch, addOrEditFormData.value).then(() => {
         inputStore.finishSendingUserData();
         if (!Object.entries(userStore.addingUserErrors).length) {
             closeModal();
@@ -84,7 +96,7 @@ const sendFormDataToBackend = async () => {
 
 const updateUser = async () => {
     inputStore.beginSendingUserData()
-    await userStore.editUser($apiFetch, formData.value).then(() => {
+    await userStore.editUser($apiFetch, addOrEditFormData.value).then(() => {
         inputStore.finishSendingUserData();
         if (!Object.entries(userStore.editingUserErrors).length) {
             closeModal()
@@ -92,15 +104,15 @@ const updateUser = async () => {
     }).catch(err => {
         console.log(err)
     })
-    console.log(formData.value)
+    console.log(addOrEditFormData.value)
     console.log(userStore.editingUserErrors)
 }
 
 const toggleField = (field: any) => {
     if (field === 'matricule') {
-        formData.value.edit_matricule = !formData.value.edit_matricule
+        addOrEditFormData.value.edit_matricule = !addOrEditFormData.value.edit_matricule
     } else if (field === 'email1') {
-        formData.value.edit_email = !formData.value.edit_email
+        addOrEditFormData.value.edit_email = !addOrEditFormData.value.edit_email
     }
 }
 
@@ -112,94 +124,105 @@ const toggleField = (field: any) => {
             <header class="text-white bg-blue-700 p-3">
                 <div class="flex items-center">
                     <div class="mr-auto text-2xl">
-                        Informations utilisateur
+                        {{ affectation ? 'Affectation profil/fonction' : 'Informations utilisateur' }}
                     </div>
                     <i class="fa-solid fa-x cursor-pointer" @click.prevent="closeModal()"></i>
                 </div>
             </header>
 
             <div v-if="inputStore.sendingUser">Loading...</div>
-            <div v-if="!inputStore.sendingUser">
+            <div v-if="affectation">
                 <div class="p-3 flex">
-                    <FormInput :disabled="formData.edit_matricule && edit" v-model="formData.matricule" :data="user?.matricule" val="matricule">
-                        <div v-if="edit">changer matricule <input type="checkbox" :value="!formData.edit_matricule" :checked="!formData.edit_matricule" @click="toggleField('matricule')" /></div>
+                    <FormInput :disabled="true" :data="user?.matricule" v-model="affectationFormData.matricule" val="matricule" />
+                    <FormInput type="select" v-model="affectationFormData.profile" :data="user?.role?.name" val="profile" />
+                </div>
+
+                <div class="p-3 flex">
+                    <FormInput :disabled="true" :data="user?.first_name + ' ' + user?.last_name" v-model="affectationFormData.name" val="name" />
+                    <InputType :affectation="affectation" val="team" type="text" title="Team"/>
+                </div>
+            </div>
+            <div v-if="!inputStore.sendingUser && !affectation">
+                <div class="p-3 flex">
+                    <FormInput :disabled="addOrEditFormData.edit_matricule && edit" v-model="addOrEditFormData.matricule" :data="user?.matricule" val="matricule">
+                        <div v-if="edit">changer matricule <input type="checkbox" :value="!addOrEditFormData.edit_matricule" :checked="!addOrEditFormData.edit_matricule" @click="toggleField('matricule')" /></div>
                         <div v-if="userStore.addingUserErrors?.matricule && !edit" v-for="error in userStore.addingUserErrors?.matricule" class="text-xs text-red-500">{{ error }}</div>
                         <div v-if="userStore.editingUserErrors?.matricule && edit" v-for="error in userStore.editingUserErrors?.matricule" class="text-xs text-red-500">{{ error }}</div>
                     </FormInput>
-                    <FormInput :disabled="formData.edit_email && edit" v-model="formData.email_1" :data="user?.email_1" val="e-mail">
-                        <div v-if="edit">changer email <input type="checkbox" :value="!formData.edit_email" :checked="!formData.edit_email" @click="toggleField('email1')" /></div>
+                    <FormInput :disabled="addOrEditFormData.edit_email && edit" v-model="addOrEditFormData.email_1" :data="user?.email_1" val="e-mail">
+                        <div v-if="edit">changer email <input type="checkbox" :value="!addOrEditFormData.edit_email" :checked="!addOrEditFormData.edit_email" @click="toggleField('email1')" /></div>
                         <div v-if="userStore.addingUserErrors?.email_1 && !edit" v-for="error in userStore.addingUserErrors?.email_1" class="text-xs text-red-500">{{ error }}</div>
                         <div v-if="userStore.editingUserErrors?.email_1 && edit" v-for="error in userStore.editingUserErrors?.email_1" class="text-xs text-red-500">{{ error }}</div>
                     </FormInput>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.nom" :data="user?.first_name" val="nom">
+                    <FormInput v-model="addOrEditFormData.nom" :data="user?.first_name" val="nom">
                         <div v-if="userStore.addingUserErrors?.nom && !edit" v-for="error in userStore.addingUserErrors?.nom" class="text-xs text-red-500">{{ error }}</div>
                     </FormInput>
-                    <FormInput v-model="formData.prenom" :data="user?.last_name" val="prenom">
+                    <FormInput v-model="addOrEditFormData.prenom" :data="user?.last_name" val="prenom">
                         <div v-if="userStore.addingUserErrors?.prenom && !edit" v-for="error in userStore.addingUserErrors?.prenom" class="text-xs text-red-500">{{ error }}</div>
                     </FormInput>
                 </div>
 
                 <div class="p-3 flex">
                     <div class="w-1/2 flex items-center mx-3">
-                        <RadioInput v-model="formData.sexe" :data="user?.Sexe" val="sexe_homme"/>
-                        <RadioInput v-model="formData.sexe" :data="user?.Sexe" val="sexe_femme"/>
+                        <RadioInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_homme"/>
+                        <RadioInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_femme"/>
                     </div>
-                    <FormInput v-model="formData.date_mep" val="date mep"/>
+                    <FormInput v-model="addOrEditFormData.date_mep" val="date mep"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.langue_principale" :data="user?.primary_language?.name" type="select"
+                    <FormInput v-model="addOrEditFormData.langue_principale" :data="user?.primary_language?.name" type="select"
                                val="principal language"/>
-                    <FormInput v-model="formData.date_entree_formation" :data="user?.date_entree_formation"
+                    <FormInput v-model="addOrEditFormData.date_entree_formation" :data="user?.date_entree_formation"
                                val="date début formation"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.cin_number" :data="cinNumber" val="identity number CIN"/>
-                    <FormInput v-model="formData.passport_number" :data="passportNumber"
+                    <FormInput v-model="addOrEditFormData.cin_number" :data="cinNumber" val="identity number CIN"/>
+                    <FormInput v-model="addOrEditFormData.passport_number" :data="passportNumber"
                                val="identity number Passport"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.carte_sejour_number" :data="carteSejourNumber"
+                    <FormInput v-model="addOrEditFormData.carte_sejour_number" :data="carteSejourNumber"
                                val="identity number Carte sèjour"/>
-                    <FormInput v-model="formData.nationalite" :data="user?.nationality?.name" type="select"
+                    <FormInput v-model="addOrEditFormData.nationalite" :data="user?.nationality?.name" type="select"
                                val="nationalities"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.date_naissance" :data="user?.date_naissance" val="date_naissance"/>
-                    <FormInput v-model="formData.sourcing_provider" :data="user?.sourcing_type?.name" :edit="edit" type="select"
+                    <FormInput v-model="addOrEditFormData.date_naissance" :data="user?.date_naissance" val="date_naissance"/>
+                    <FormInput v-model="addOrEditFormData.sourcing_provider" :data="user?.sourcing_type?.name" :edit="edit" type="select"
                                val="fournisseur"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.situation_familiale" :data="user?.family_situation?.name"
+                    <FormInput v-model="addOrEditFormData.situation_familiale" :data="user?.family_situation?.name"
                                val="situation familiale" type="select"/>
-                    <FormInput v-model="formData.photo" :data="user?.photo" val="photo"/>
+                    <FormInput v-model="addOrEditFormData.photo" :data="user?.photo" val="photo"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.phone_1" :data="user?.phone_1" val="téléphone 1"/>
-                    <FormInput v-model="formData.nombre_enfants" :data="user?.nombre_enfants" val="nombre enfants"/>
+                    <FormInput v-model="addOrEditFormData.phone_1" :data="user?.phone_1" val="téléphone 1"/>
+                    <FormInput v-model="addOrEditFormData.nombre_enfants" :data="user?.nombre_enfants" val="nombre enfants"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.phone_2" :data="user?.phone_2" val="téléphone 2"/>
-                    <FormInput v-model="formData.cnss_number" :data="user?.cnss_number" val="Numéro CNSS"/>
+                    <FormInput v-model="addOrEditFormData.phone_2" :data="user?.phone_2" val="téléphone 2"/>
+                    <FormInput v-model="addOrEditFormData.cnss_number" :data="user?.cnss_number" val="Numéro CNSS"/>
                 </div>
 
                 <div v-if="edit" class="p-3 flex">
-                    <FormInput v-model="formData.solde_cp" :data="Number(user?.solde_cp)" val="solde_cp" />
-                    <FormInput v-model="formData.solde_rjf" :data="Number(user?.solde_rjf)" val="solde_rjf" />
+                    <FormInput v-model="addOrEditFormData.solde_cp" :data="Number(user?.solde_cp)" val="solde_cp" />
+                    <FormInput v-model="addOrEditFormData.solde_rjf" :data="Number(user?.solde_rjf)" val="solde_rjf" />
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="formData.comment" :data="user?.comment?.comment" val="comment"/>
-                    <FormInput v-model="formData.address" :data="user?.address" val="address"/>
+                    <FormInput v-model="addOrEditFormData.comment" :data="user?.comment?.comment" val="comment"/>
+                    <FormInput v-model="addOrEditFormData.address" :data="user?.address" val="address"/>
                 </div>
 
             </div>
