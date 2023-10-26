@@ -3,7 +3,7 @@
 import {definePageMeta} from "#imports";
 import ButtonWithIcon from "~/components/ButtonWithIcon.vue";
 import InputType from "~/components/InputType.vue";
-import RadioInput from "~/components/RadioInput.vue";
+import RadioOrCheckboxInput from "~/components/RadioOrCheckboxInput.vue";
 import {useTeamStore} from "~/stores/TeamStore";
 import {useProfilesStore} from "~/stores/ProfilesStore";
 import {useLanguagesStore} from "~/stores/LanguagesStore";
@@ -98,9 +98,22 @@ watch(searchUsers, () => {
 })
 
 let showModal = ref(false);
+let increaseSolde = ref(false);
 
 let newUser = () => {
     showModal.value = true;
+}
+
+let increasingSolde = () => {
+    increaseSolde.value = true;
+}
+
+let closeModal = () => {
+    if (showModal.value) {
+        showModal.value = false
+    } else if (increaseSolde.value) {
+        increaseSolde.value = false
+    }
 }
 
 </script>
@@ -118,7 +131,7 @@ let newUser = () => {
 
             <ButtonWithIcon
                 classes="bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:ring-cyan-500"
-                icon-class="fa-regular fa-file-excel">
+                icon-class="fa-regular fa-file-excel" @click="increasingSolde()">
                 Augmenter Soldes
             </ButtonWithIcon>
         </div>
@@ -138,7 +151,7 @@ let newUser = () => {
                                 Status
                             </label>
                             <div class="flex">
-                                <RadioInput v-for="elem in typeStatus" :title="elem.title" :val="elem.val"/>
+                                <RadioOrCheckboxInput v-for="elem in typeStatus" :title="elem.title" :val="elem.val"/>
                             </div>
                         </div>
                     </div>
@@ -194,6 +207,6 @@ let newUser = () => {
         </div>
     </div>
 
-    <Modal :show="showModal" @close="showModal = false"/>
+    <Modal :show="showModal || increaseSolde" :increaseSolde="increaseSolde" @close="closeModal()"/>
 </template>
 

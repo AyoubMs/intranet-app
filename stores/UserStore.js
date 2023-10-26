@@ -5,15 +5,38 @@ let users = ref(null)
 let searchedUser = ref('')
 let addingUserErrors = ref([])
 let editingUserErrors = ref([])
+let deactivatingUserErrors = ref([])
+
 
 export let useUserStore = defineStore('user', {
     state() {
         return {
-            user, users, searchedUser, addingUserErrors, editingUserErrors
+            user, users, searchedUser, addingUserErrors, editingUserErrors, deactivatingUserErrors
         }
     },
 
     actions: {
+        async deactivateUser(fetchFunc, body) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'deactivate_user', body}
+            }).then(data => {
+                switch(typeof(data)) {
+                    case 'object':
+                        this.deactivatingUserErrors = data;
+                        break;
+                    case 'string':
+                        this.deactivatingUserErrors = [];
+                        break;
+                }
+            }).catch(err => console.log(err))
+        },
+        async affectUser(fetchFunc, body) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'affect_user', body}
+            }).catch(err => console.log(err))
+        },
         async editUser(fetchFunc, body) {
             await fetchFunc('/data', {
                 method: 'POST',

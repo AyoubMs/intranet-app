@@ -6,6 +6,7 @@ import {useLanguagesStore} from "~/stores/LanguagesStore.js";
 const props = defineProps({
   elements: Object,
   val: String,
+  affectation: Boolean
 })
 
 let teamStore = useTeamStore()
@@ -15,7 +16,11 @@ let languageStore = useLanguagesStore()
 const removeItem = (data, type) => {
   switch (type) {
     case 'team':
-      teamStore.removeTeam(data)
+      if (!props.affectation) {
+        teamStore.removeTeam(data)
+      } else if (props.affectation) {
+        teamStore.removeAffectationTeam(data);
+      }
       break;
     case 'profile':
       profilesStore.removeProfile(data)

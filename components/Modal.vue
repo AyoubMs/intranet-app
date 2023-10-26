@@ -3,17 +3,26 @@ import FormInput from "~/components/FormInput.vue";
 import {useInputStore} from "~/stores/InputStore";
 import {useUserStore} from "~/stores/UserStore";
 import InputType from "~/components/InputType.vue";
+import RadioOrCheckboxInput from "~/components/RadioOrCheckboxInput.vue";
+import {useTeamStore} from "~/stores/TeamStore";
+import {useLanguagesStore} from "~/stores/LanguagesStore";
+import {useProfilesStore} from "~/stores/ProfilesStore";
 
 const props = defineProps({
     show: Boolean,
     edit: Boolean,
     affectation: Boolean,
-    user: Object
+    deactivation: Boolean,
+    increaseSolde: Boolean,
+    user: Object,
+    filterData: Object
 })
 
 let inputStore = useInputStore()
 
 let userStore = useUserStore()
+
+let teamStore = useTeamStore()
 
 const {$apiFetch} = useNuxtApp()
 
@@ -52,15 +61,23 @@ let affectationFormData = ref({
     matricule: null,
     name: null,
     profile: null,
-    team: null,
-    date_debut: null,
-    date_debut_formation: null,
-    date_fin_formation: null,
+    teams: null,
+    date_entree_formation: null,
+    principal_operation: null
 })
 
-let cinNumber : any = ref(props.user?.identity_types?.filter((data:any) => data?.name === 'CIN')[0]?.identity_number)
-let passportNumber : any = ref(props.user?.identity_types?.filter((data:any) => data?.name === 'Passeport')[0]?.identity_number)
-let carteSejourNumber : any = ref(props.user?.identity_types?.filter((data:any) => data?.name === 'Carte sejour')[0]?.identity_number);
+let deactivationFormData = ref({
+    matricule: null,
+    name: null,
+    date_depart: null,
+    type_depart: null,
+    raison_depart: null,
+    comment: null
+})
+
+let cinNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'CIN')[0]?.identity_number)
+let passportNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'Passeport')[0]?.identity_number)
+let carteSejourNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'Carte sejour')[0]?.identity_number);
 
 onMounted(() => {
     console.log(props.user)
@@ -68,11 +85,15 @@ onMounted(() => {
 
 watch(userStore.addingUserErrors, () => {
     console.log(userStore.addingUserErrors)
-}, { deep: true })
+}, {deep: true})
 
 watch(affectationFormData, () => {
     console.log(affectationFormData.value)
 }, {deep: true})
+
+watch(inputStore, () => {
+    console.log(inputStore.injectionErrors)
+}, { deep: true });
 
 const emit = defineEmits(["close"]);
 
@@ -80,6 +101,7 @@ const closeModal = () => {
     emit('close');
     userStore.refreshAddingUserErrors()
     userStore.refreshEditingUserErrors()
+    inputStore.refreshInjectionErrors()
 }
 
 const sendFormDataToBackend = async () => {
@@ -105,7 +127,6 @@ const updateUser = async () => {
         console.log(err)
     })
     console.log(addOrEditFormData.value)
-    console.log(userStore.editingUserErrors)
 }
 
 const toggleField = (field: any) => {
@@ -116,6 +137,87 @@ const toggleField = (field: any) => {
     }
 }
 
+let languageStore = useLanguagesStore()
+let profilesStore = useProfilesStore()
+
+let filterData = ref({
+    teams: teamStore.selectedTeams,
+    languages: languageStore.selectedLanguages,
+    profiles: profilesStore.selectedProfiles,
+    dateDebut: inputStore.dateDebut,
+    dateFin: inputStore.dateFin,
+    status: inputStore.status
+})
+
+async function refreshTableData() {
+    inputStore.loadTableData();
+    filterData.value = {
+        teams: teamStore.selectedTeams,
+        languages: languageStore.selectedLanguages,
+        profiles: profilesStore.selectedProfiles,
+        dateDebut: inputStore.dateDebut,
+        dateFin: inputStore.dateFin,
+        status: inputStore.status
+    }
+    await userStore.fetchUsers($apiFetch, inputStore.status, filterData.value).catch(err => console.log(err))
+    inputStore.finishLoadingTableData();
+}
+
+const sendAffectationDataToBackend = async () => {
+    affectationFormData.value.teams = teamStore.selectedAffectationTeams
+    inputStore.beginSendingUserData();
+    await userStore.affectUser($apiFetch, affectationFormData.value).then(() => {
+        inputStore.finishSendingUserData();
+        closeModal();
+    }).catch(err => {
+        console.log(err)
+    })
+    teamStore.refreshAffectationTeams();
+    await refreshTableData();
+}
+
+const deactivateUserInTheBackend = async () => {
+    inputStore.beginSendingUserData();
+    await userStore.deactivateUser($apiFetch, deactivationFormData.value).then(async () => {
+        inputStore.finishSendingUserData();
+        if (!Object.entries(userStore.deactivatingUserErrors).length) {
+            closeModal()
+            await refreshTableData()
+        }
+    }).catch(err => {
+        console.log(err)
+    })
+    console.log(userStore.deactivatingUserErrors)
+}
+
+const sendDataToBackend = () => {
+    if (props.edit) {
+        return updateUser();
+    } else if (!props.edit && !props.affectation && !props.deactivation) {
+        return sendFormDataToBackend()
+    } else if (props.affectation) {
+        return sendAffectationDataToBackend();
+    } else if (props.deactivation) {
+        return deactivateUserInTheBackend();
+    }
+}
+
+const getTitle = () => {
+    if (props.affectation) {
+        return 'Affectation profil/fonction'
+    } else if (props.deactivation) {
+        return 'Départ employé'
+    } else if (props.increaseSolde){
+        return 'Augmenter Soldes'
+    } else {
+        return 'Informations utilisateur'
+    }
+}
+
+let increaseSoldeFormData = ref({
+    increaseSoldeFile: null
+})
+
 </script>
 
 <template>
@@ -124,57 +226,122 @@ const toggleField = (field: any) => {
             <header class="text-white bg-blue-700 p-3">
                 <div class="flex items-center">
                     <div class="mr-auto text-2xl">
-                        {{ affectation ? 'Affectation profil/fonction' : 'Informations utilisateur' }}
+                        {{ getTitle() }}
                     </div>
                     <i class="fa-solid fa-x cursor-pointer" @click.prevent="closeModal()"></i>
                 </div>
             </header>
 
             <div v-if="inputStore.sendingUser">Loading...</div>
-            <div v-if="affectation">
+            <div v-if="increaseSolde">
+                <FormInput v-model="increaseSoldeFormData.increaseSoldeFile" val="solde">
+                    <div v-if="inputStore.injectionErrors?.injectionError && !edit" class="text-xs text-red-500">
+                        {{ inputStore.injectionErrors?.injectionError }}
+                    </div>
+                </FormInput>
+            </div>
+            <div v-if="deactivation && !inputStore.sendingUser" class="text-left flex flex-col">
+                <div class="p-6">
+                    <FormInput :disabled="true" :deactivation="deactivation" :data="user?.matricule"
+                               v-model="deactivationFormData.matricule" val="matricule"/>
+                    <FormInput :disabled="true" :deactivation="deactivation"
+                               :data="user?.first_name + ' ' + user?.last_name"
+                               v-model="deactivationFormData.name" val="nom et prénom"/>
+                    <FormInput :deactivation="deactivation" :data="user?.date_depart"
+                               v-model="deactivationFormData.date_depart" val="date départ">
+                        <div v-if="userStore.deactivatingUserErrors?.date_depart && !edit"
+                             v-for="error in userStore.deactivatingUserErrors?.date_depart" class="text-xs text-red-500">
+                            {{ error }}
+                        </div>
+                    </FormInput>
+                    <FormInput type="select" :deactivation="deactivation" :data="user?.motif?.name"
+                               v-model="deactivationFormData.type_depart" val="type départ"/>
+                    <FormInput :deactivation="deactivation" v-model="deactivationFormData.comment"
+                               :data="user?.comment?.leave_comment" val="comment"/>
+                </div>
+            </div>
+            <div v-if="affectation && !inputStore.sendingUser" class="text-left">
                 <div class="p-3 flex">
-                    <FormInput :disabled="true" :data="user?.matricule" v-model="affectationFormData.matricule" val="matricule" />
-                    <FormInput type="select" v-model="affectationFormData.profile" :data="user?.role?.name" val="profile" />
+                    <FormInput :disabled="true" :data="user?.matricule" v-model="affectationFormData.matricule"
+                               val="matricule"/>
+                    <FormInput type="select" v-model="affectationFormData.profile" :data="user?.role?.name"
+                               val="profile"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput :disabled="true" :data="user?.first_name + ' ' + user?.last_name" v-model="affectationFormData.name" val="name" />
-                    <InputType :affectation="affectation" val="team" type="text" title="Team"/>
+                    <FormInput :disabled="true" :data="user?.first_name + ' ' + user?.last_name"
+                               v-model="affectationFormData.name" val="name"/>
+                    <InputType :user="user" :affectation="affectation" val="team" type="text" title="Team"/>
+                </div>
+                <div class="p-3 flex">
+                    <FormInput type="date" v-model="affectationFormData.date_entree_formation"
+                               val="date début formation"/>
+                    <FormInput type="select" v-model="affectationFormData.principal_operation"
+                               :data="user?.operation?.name" val="operation principale"/>
                 </div>
             </div>
-            <div v-if="!inputStore.sendingUser && !affectation">
+            <div v-if="!increaseSolde && !inputStore.sendingUser && !affectation && !deactivation" class="text-left">
                 <div class="p-3 flex">
-                    <FormInput :disabled="addOrEditFormData.edit_matricule && edit" v-model="addOrEditFormData.matricule" :data="user?.matricule" val="matricule">
-                        <div v-if="edit">changer matricule <input type="checkbox" :value="!addOrEditFormData.edit_matricule" :checked="!addOrEditFormData.edit_matricule" @click="toggleField('matricule')" /></div>
-                        <div v-if="userStore.addingUserErrors?.matricule && !edit" v-for="error in userStore.addingUserErrors?.matricule" class="text-xs text-red-500">{{ error }}</div>
-                        <div v-if="userStore.editingUserErrors?.matricule && edit" v-for="error in userStore.editingUserErrors?.matricule" class="text-xs text-red-500">{{ error }}</div>
+                    <FormInput :disabled="addOrEditFormData.edit_matricule && edit"
+                               v-model="addOrEditFormData.matricule"
+                               :data="user?.matricule" val="matricule">
+                        <div v-if="edit">changer matricule <input type="checkbox"
+                                                                  :value="!addOrEditFormData.edit_matricule"
+                                                                  :checked="!addOrEditFormData.edit_matricule"
+                                                                  @click="toggleField('matricule')"/></div>
+                        <div v-if="userStore.addingUserErrors?.matricule && !edit"
+                             v-for="error in userStore.addingUserErrors?.matricule" class="text-xs text-red-500">
+                            {{ error }}
+                        </div>
+                        <div v-if="userStore.editingUserErrors?.matricule && edit"
+                             v-for="error in userStore.editingUserErrors?.matricule" class="text-xs text-red-500">
+                            {{ error }}
+                        </div>
                     </FormInput>
-                    <FormInput :disabled="addOrEditFormData.edit_email && edit" v-model="addOrEditFormData.email_1" :data="user?.email_1" val="e-mail">
-                        <div v-if="edit">changer email <input type="checkbox" :value="!addOrEditFormData.edit_email" :checked="!addOrEditFormData.edit_email" @click="toggleField('email1')" /></div>
-                        <div v-if="userStore.addingUserErrors?.email_1 && !edit" v-for="error in userStore.addingUserErrors?.email_1" class="text-xs text-red-500">{{ error }}</div>
-                        <div v-if="userStore.editingUserErrors?.email_1 && edit" v-for="error in userStore.editingUserErrors?.email_1" class="text-xs text-red-500">{{ error }}</div>
+                    <FormInput :disabled="addOrEditFormData.edit_email && edit" v-model="addOrEditFormData.email_1"
+                               :data="user?.email_1" val="e-mail">
+                        <div v-if="edit">changer email <input type="checkbox" :value="!addOrEditFormData.edit_email"
+                                                              :checked="!addOrEditFormData.edit_email"
+                                                              @click="toggleField('email1')"/></div>
+                        <div v-if="userStore.addingUserErrors?.email_1 && !edit"
+                             v-for="error in userStore.addingUserErrors?.email_1" class="text-xs text-red-500">{{
+                                error
+                            }}
+                        </div>
+                        <div v-if="userStore.editingUserErrors?.email_1 && edit"
+                             v-for="error in userStore.editingUserErrors?.email_1" class="text-xs text-red-500">{{
+                                error
+                            }}
+                        </div>
                     </FormInput>
                 </div>
 
                 <div class="p-3 flex">
                     <FormInput v-model="addOrEditFormData.nom" :data="user?.first_name" val="nom">
-                        <div v-if="userStore.addingUserErrors?.nom && !edit" v-for="error in userStore.addingUserErrors?.nom" class="text-xs text-red-500">{{ error }}</div>
+                        <div v-if="userStore.addingUserErrors?.nom && !edit"
+                             v-for="error in userStore.addingUserErrors?.nom"
+                             class="text-xs text-red-500">{{ error }}
+                        </div>
                     </FormInput>
                     <FormInput v-model="addOrEditFormData.prenom" :data="user?.last_name" val="prenom">
-                        <div v-if="userStore.addingUserErrors?.prenom && !edit" v-for="error in userStore.addingUserErrors?.prenom" class="text-xs text-red-500">{{ error }}</div>
+                        <div v-if="userStore.addingUserErrors?.prenom && !edit"
+                             v-for="error in userStore.addingUserErrors?.prenom"
+                             class="text-xs text-red-500">{{ error }}
+                        </div>
                     </FormInput>
                 </div>
 
                 <div class="p-3 flex">
                     <div class="w-1/2 flex items-center mx-3">
-                        <RadioInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_homme"/>
-                        <RadioInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_femme"/>
+                        <RadioOrCheckboxInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_homme"/>
+                        <RadioOrCheckboxInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_femme"/>
                     </div>
                     <FormInput v-model="addOrEditFormData.date_mep" val="date mep"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.langue_principale" :data="user?.primary_language?.name" type="select"
+                    <FormInput v-model="addOrEditFormData.langue_principale" :data="user?.primary_language?.name"
+                               type="select"
                                val="principal language"/>
                     <FormInput v-model="addOrEditFormData.date_entree_formation" :data="user?.date_entree_formation"
                                val="date début formation"/>
@@ -194,8 +361,11 @@ const toggleField = (field: any) => {
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.date_naissance" :data="user?.date_naissance" val="date_naissance"/>
-                    <FormInput v-model="addOrEditFormData.sourcing_provider" :data="user?.sourcing_type?.name" :edit="edit" type="select"
+                    <FormInput v-model="addOrEditFormData.date_naissance" :data="user?.date_naissance"
+                               val="date_naissance"/>
+                    <FormInput v-model="addOrEditFormData.sourcing_provider" :data="user?.sourcing_type?.name"
+                               :edit="edit"
+                               type="select"
                                val="fournisseur"/>
                 </div>
 
@@ -207,7 +377,8 @@ const toggleField = (field: any) => {
 
                 <div class="p-3 flex">
                     <FormInput v-model="addOrEditFormData.phone_1" :data="user?.phone_1" val="téléphone 1"/>
-                    <FormInput v-model="addOrEditFormData.nombre_enfants" :data="user?.nombre_enfants" val="nombre enfants"/>
+                    <FormInput v-model="addOrEditFormData.nombre_enfants" :data="user?.nombre_enfants"
+                               val="nombre enfants"/>
                 </div>
 
                 <div class="p-3 flex">
@@ -216,8 +387,8 @@ const toggleField = (field: any) => {
                 </div>
 
                 <div v-if="edit" class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.solde_cp" :data="Number(user?.solde_cp)" val="solde_cp" />
-                    <FormInput v-model="addOrEditFormData.solde_rjf" :data="Number(user?.solde_rjf)" val="solde_rjf" />
+                    <FormInput v-model="addOrEditFormData.solde_cp" :data="Number(user?.solde_cp)" val="solde_cp"/>
+                    <FormInput v-model="addOrEditFormData.solde_rjf" :data="Number(user?.solde_rjf)" val="solde_rjf"/>
                 </div>
 
                 <div class="p-3 flex">
@@ -231,7 +402,7 @@ const toggleField = (field: any) => {
                 <button class="mr-auto text-black bg-gray-100 p-2 rounded-md" @click.prevent="$emit('close')">Cancel
                 </button>
                 <button class="bg-cyan-500 text-white p-2 rounded-md"
-                        @click.prevent="edit ? updateUser() :sendFormDataToBackend()">Valider
+                        @click.prevent="sendDataToBackend()">Valider
                 </button>
             </footer>
         </div>

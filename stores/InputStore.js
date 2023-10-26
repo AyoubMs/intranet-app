@@ -7,16 +7,51 @@ let sourcingTypes = ref(null)
 let sourcingProviders = ref(null)
 let nationalities = ref(null)
 let familySituations = ref(null)
+let operations = ref(null)
+let motifs = ref(null)
+let injectionErrors = ref([])
 let showModal = ref(false);
 
 export let useInputStore = defineStore('inputs', {
     state(){
         return {
-            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, sendingUser: false, showModal
+            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, operations, motifs, sendingUser: false, injectionErrors, showModal
         }
     },
 
     actions: {
+        async sendInjectionSoldeFile(fetchFunc, formData) {
+            await fetchFunc('/injection', {
+                method: 'POST',
+                body: formData,
+                // content: 'multipart/form-data'
+            }).then((data) => {
+                switch(typeof(data)) {
+                    case 'object':
+                        this.injectionErrors = data;
+                        break;
+                    case 'string':
+                        this.injectionErrors = [];
+                        break;
+                }
+            }).catch(err => console.log(err))
+        },
+        async fetchMotifs(fetchFunc) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'motifs_depart'}
+            }).then((data) => {
+                this.motifs = data
+            }).catch(err => console.log(err))
+        },
+        async fetchOperations(fetchFunc) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'operations'}
+            }).then((data) => {
+                this.operations = data;
+            }).catch(err => console.log(err))
+        },
         async fetchFamilySituations(fetchFunc) {
             await fetchFunc('/data', {
                 method: 'POST',
@@ -81,5 +116,8 @@ export let useInputStore = defineStore('inputs', {
         finishSendingUserData() {
             this.sendingUser = false;
         },
+        refreshInjectionErrors() {
+            this.injectionErrors = [];
+        }
     }
 })

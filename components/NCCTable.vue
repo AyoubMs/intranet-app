@@ -28,7 +28,7 @@ let userStore = useUserStore()
         </tr>
         </thead>
         <tbody class="border-2">
-        <tr class="text-center" v-if="userStore.searchedUser !== 'null'">
+        <tr class="text-center" :class="{'bg-red-100': !userStore.searchedUser?.active}" v-if="userStore.searchedUser !== 'null'">
             <td class="px-2 border-2"></td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.matricule }}</td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.first_name }} / {{
@@ -44,7 +44,7 @@ let userStore = useUserStore()
             <td class="px-2 border-2">{{ userStore.searchedUser?.solde_rjf }}</td>
             <Actions :user="userStore.searchedUser" />
         </tr>
-        <tr class="text-center" v-if="userStore.searchedUser === 'null'" v-for="user in userStore.users?.data">
+        <tr class="text-center" :class="{'bg-red-100': !user?.active}" v-if="userStore.searchedUser === 'null'" v-for="user in userStore.users?.data">
             <td class="px-2 border-2"></td>
             <td class="px-2 border-2">{{ user?.matricule }}</td>
             <td class="px-2 border-2">{{ user?.first_name }} / {{ user?.last_name }}</td>
