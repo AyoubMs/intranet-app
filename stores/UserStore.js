@@ -16,6 +16,12 @@ export let useUserStore = defineStore('user', {
     },
 
     actions: {
+        async increaseSoldes(fetchFunc) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'inject_solde'}
+            }).catch(err => console.log(err))
+        },
         async deactivateUser(fetchFunc, body) {
             await fetchFunc('/data', {
                 method: 'POST',

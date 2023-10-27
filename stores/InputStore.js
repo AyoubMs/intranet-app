@@ -15,7 +15,7 @@ let showModal = ref(false);
 export let useInputStore = defineStore('inputs', {
     state(){
         return {
-            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, operations, motifs, sendingUser: false, injectionErrors, showModal
+            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, operations, motifs, sendingUser: false, injectionErrors, checkFile: false, showModal
         }
     },
 
@@ -24,14 +24,15 @@ export let useInputStore = defineStore('inputs', {
             await fetchFunc('/injection', {
                 method: 'POST',
                 body: formData,
-                // content: 'multipart/form-data'
             }).then((data) => {
                 switch(typeof(data)) {
                     case 'object':
                         this.injectionErrors = data;
+                        this.checkFile = false;
                         break;
                     case 'string':
                         this.injectionErrors = [];
+                        this.checkFile = true;
                         break;
                 }
             }).catch(err => console.log(err))

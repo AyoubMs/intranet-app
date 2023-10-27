@@ -15,28 +15,17 @@ export default defineNuxtPlugin(nuxtApp => {
         async (url, options = {}, secure = false ) => {
             if (process.client) {
                 let headers = {};
-                if (options?.content) {
-                    headers = {
-                        Accept: 'application/json',
-                        // 'Content-Type': options.content,
-                        'X-XSRF-TOKEN': Cookies.get('XSRF-TOKEN'),
-                        'laravel_session': Cookies.get('laravel_session'),
-                        'uuid': localStorage.getItem('uuid')
-                    }
-                } else {
-                    headers = {
-                        Accept: 'application/json',
-                        'X-XSRF-TOKEN': Cookies.get('XSRF-TOKEN'),
-                        'laravel_session': Cookies.get('laravel_session'),
-                        'uuid': localStorage.getItem('uuid')
-                    }
-                }
                 return await ofetch(url, {
                     baseURL: !secure ? 'http://localhost:8000' : 'https://intranet.test',
                     retry: 6,
                     retryDelay: 500,
                     credentials: 'include',
-                    headers: headers,
+                    headers: {
+                        Accept: 'application/json',
+                        'X-XSRF-TOKEN': Cookies.get('XSRF-TOKEN'),
+                        'laravel_session': Cookies.get('laravel_session'),
+                        'uuid': localStorage.getItem('uuid')
+                    },
                     method: options?.method,
                     body: options?.body,
                 })

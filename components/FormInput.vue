@@ -93,8 +93,8 @@ const onChangeFile = async (event) => {
     let fd = new FormData();
     fd.append('file', event.target.files[0], event.target.files[0]?.name)
     console.log(...fd)
+    inputStore.refreshInjectionErrors()
     await inputStore.sendInjectionSoldeFile($apiFetch, fd)
-    // emits('update:modelValue', fd)
 }
 
 </script>

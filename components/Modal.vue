@@ -93,7 +93,7 @@ watch(affectationFormData, () => {
 
 watch(inputStore, () => {
     console.log(inputStore.injectionErrors)
-}, { deep: true });
+}, {deep: true});
 
 const emit = defineEmits(["close"]);
 
@@ -102,6 +102,7 @@ const closeModal = () => {
     userStore.refreshAddingUserErrors()
     userStore.refreshEditingUserErrors()
     inputStore.refreshInjectionErrors()
+    inputStore.checkFile = false;
 }
 
 const sendFormDataToBackend = async () => {
@@ -190,15 +191,28 @@ const deactivateUserInTheBackend = async () => {
     console.log(userStore.deactivatingUserErrors)
 }
 
+const triggerSoldeInjectionInTheBackend = async () => {
+    inputStore.beginSendingUserData()
+    await userStore.increaseSoldes($apiFetch).then(async () => {
+        inputStore.finishSendingUserData();
+        // closeModal()
+        // await refreshTableData()
+    }).catch(err => {
+        console.log(err)
+    })
+}
+
 const sendDataToBackend = () => {
     if (props.edit) {
         return updateUser();
-    } else if (!props.edit && !props.affectation && !props.deactivation) {
+    } else if (!props.edit && !props.affectation && !props.deactivation && !props.increaseSolde) {
         return sendFormDataToBackend()
     } else if (props.affectation) {
         return sendAffectationDataToBackend();
     } else if (props.deactivation) {
         return deactivateUserInTheBackend();
+    } else if (props.increaseSolde) {
+        return triggerSoldeInjectionInTheBackend();
     }
 }
 
@@ -207,7 +221,7 @@ const getTitle = () => {
         return 'Affectation profil/fonction'
     } else if (props.deactivation) {
         return 'Départ employé'
-    } else if (props.increaseSolde){
+    } else if (props.increaseSolde) {
         return 'Augmenter Soldes'
     } else {
         return 'Informations utilisateur'
@@ -233,7 +247,7 @@ let increaseSoldeFormData = ref({
             </header>
 
             <div v-if="inputStore.sendingUser">Loading...</div>
-            <div v-if="increaseSolde">
+            <div v-if="increaseSolde && !inputStore.sendingUser">
                 <FormInput v-model="increaseSoldeFormData.increaseSoldeFile" val="solde">
                     <div v-if="inputStore.injectionErrors?.injectionError && !edit" class="text-xs text-red-500">
                         {{ inputStore.injectionErrors?.injectionError }}
@@ -250,7 +264,8 @@ let increaseSoldeFormData = ref({
                     <FormInput :deactivation="deactivation" :data="user?.date_depart"
                                v-model="deactivationFormData.date_depart" val="date départ">
                         <div v-if="userStore.deactivatingUserErrors?.date_depart && !edit"
-                             v-for="error in userStore.deactivatingUserErrors?.date_depart" class="text-xs text-red-500">
+                             v-for="error in userStore.deactivatingUserErrors?.date_depart"
+                             class="text-xs text-red-500">
                             {{ error }}
                         </div>
                     </FormInput>
@@ -401,8 +416,8 @@ let increaseSoldeFormData = ref({
             <footer class="flex mx-6 my-3 bg-gray-200 p-3" v-if="!inputStore.sendingUser">
                 <button class="mr-auto text-black bg-gray-100 p-2 rounded-md" @click.prevent="$emit('close')">Cancel
                 </button>
-                <button class="bg-cyan-500 text-white p-2 rounded-md"
-                        @click.prevent="sendDataToBackend()">Valider
+                <button class="bg-cyan-500 text-white p-2 rounded-md" :class="{'!bg-gray-500': !inputStore.checkFile}"
+                        @click.prevent="sendDataToBackend()" :disabled="!inputStore.checkFile">Valider
                 </button>
             </footer>
         </div>
