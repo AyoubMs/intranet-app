@@ -30,7 +30,7 @@ export let useLanguagesStore = defineStore('languages', {
             this.loadingLanguages = true;
         },
         finishLoadingLanguagesData() {
-            this.loadingSourcingProviders = false;
+            this.loadingLanguages = false;
         },
     }
 })

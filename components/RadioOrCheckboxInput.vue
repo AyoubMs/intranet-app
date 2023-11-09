@@ -1,5 +1,5 @@
 <script setup>
-import {useInputStore} from "~/stores/InputStore.js";
+import {useSoldeInputStore} from "~/stores/SoldeInputStore.js";
 import {useTeamStore} from "~/stores/TeamStore.js";
 import {useLanguagesStore} from "~/stores/LanguagesStore.js";
 import {useProfilesStore} from "~/stores/ProfilesStore.js";
@@ -14,7 +14,7 @@ const props = defineProps({
 
 const {$apiFetch} = useNuxtApp()
 
-let inputStore = useInputStore()
+let inputStore = useSoldeInputStore()
 let teamStore = useTeamStore()
 
 const emits = defineEmits(['update:modelValue'])

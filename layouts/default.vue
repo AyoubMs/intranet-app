@@ -126,7 +126,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-pen-to-square',
                 link:
-                    '/Saisie/demande/conges'
+                    '/demandesConges'
             }
             ,
             {

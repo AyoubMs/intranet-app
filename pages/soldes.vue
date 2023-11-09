@@ -7,11 +7,12 @@ import RadioOrCheckboxInput from "~/components/RadioOrCheckboxInput.vue";
 import {useTeamStore} from "~/stores/TeamStore";
 import {useProfilesStore} from "~/stores/ProfilesStore";
 import {useLanguagesStore} from "~/stores/LanguagesStore";
-import {useInputStore} from "~/stores/InputStore";
+import {useSoldeInputStore} from "~/stores/SoldeInputStore";
 import NCCTable from "~/components/NCCTable.vue";
 import {useUserStore} from "~/stores/UserStore";
 import {debounce} from "lodash";
 import Modal from "~/components/Modal.vue";
+import Pagination from "~/pages/Pagination.vue";
 
 definePageMeta({
     middleware: ['auth']
@@ -27,7 +28,7 @@ let profilesStore = useProfilesStore()
 
 let languageStore = useLanguagesStore()
 
-let inputStore = useInputStore()
+let inputStore = useSoldeInputStore()
 
 let filterData = ref({
     teams: teamStore.selectedTeams,
@@ -189,21 +190,9 @@ let closeModal = () => {
                 />
             </div>
         </div>
-        <NCCTable/>
-        <div v-if="userStore.searchedUser === 'null'" class="flex justify-end mt-3 mx-auto">
-            <div v-for="(link, index) in userStore.users?.links"
-                 class="border w-6 text-center"
-                 :class="{
-                '!bg-cyan-500 !text-white': link?.active,
-                'hover:bg-cyan-500 hover:text-white cursor-pointer': link?.url && !link?.active,
-                }"
-                 @click="fetchUsersPartial(link)">
-                <div v-if="index == 0"><i class="fa-solid fa-chevron-left"></i></div>
-                <div v-else-if="index > 0 && Number(link?.label)">{{ link?.label }}</div>
-                <div v-else-if="link?.label === '...'">...</div>
-                <div v-else-if="!Number(link?.label) && link?.label !== '...'"><i
-                    class="fa-solid fa-chevron-right"></i></div>
-            </div>
+        <NCCTable type="soldes"/>
+        <div v-if="userStore.searchedUser === 'null'">
+            <Pagination :links="userStore.users?.links" @fetching="fetchUsersPartial" />
         </div>
     </div>
 

@@ -1,5 +1,5 @@
 <script setup>
-import {useInputStore} from "~/stores/InputStore.js";
+import {useSoldeInputStore} from "~/stores/SoldeInputStore.js";
 import {useLanguagesStore} from "~/stores/LanguagesStore.js";
 import {useProfilesStore} from "~/stores/ProfilesStore.js";
 
@@ -10,36 +10,37 @@ const props = defineProps({
     data: String | Number,
     edit: Boolean,
     deactivation: Boolean,
-    disabled: Boolean
+    disabled: Boolean,
+    min: Date
 })
 
 const {$apiFetch} = useNuxtApp()
 
-const inputStore = useInputStore()
+const inputStore = useSoldeInputStore()
 const languageStore = useLanguagesStore()
 const profileStore = useProfilesStore()
 const emits = defineEmits(['update:modelValue'])
 
 onMounted(async () => {
-    if (props.val.includes('type départ')) {
+    if (props.val?.includes('type départ')) {
         await inputStore.fetchMotifs($apiFetch)
-    } else if (props.val.includes('operation')) {
+    } else if (props.val?.includes('operation')) {
         await inputStore.fetchOperations($apiFetch)
-    } else if (props.val.includes('language')) {
+    } else if (props.val?.includes('language')) {
         await languageStore.fetchLanguages($apiFetch, '')
         emits('update:modelValue', languageStore.languages[0])
-    } else if (props.val.includes('nationalities')) {
+    } else if (props.val?.includes('nationalities')) {
         await inputStore.fetchNationalities($apiFetch)
         emits('update:modelValue', inputStore.nationalities[0]);
-    } else if (props.val.includes('fournisseur')) {
+    } else if (props.val?.includes('fournisseur')) {
         await inputStore.fetchSourcingProviders($apiFetch)
         emits('update:modelValue', inputStore.sourcingProviders[0].split(' ').filter(data => data !== '').join(' '));
-    } else if (props.val.includes('situation familiale')) {
+    } else if (props.val?.includes('situation familiale')) {
         await inputStore.fetchFamilySituations($apiFetch)
         emits('update:modelValue', inputStore.familySituations[0])
-    } else if (props.val.includes('profile')) {
+    } else if (props.val?.includes('profile')) {
         await profileStore.fetchProfiles($apiFetch)
-        emits('update:modelValue', profileStore.profiles.filter(data => data.includes('Conseiller'))[0])
+        emits('update:modelValue', profileStore.profiles.filter(data => data?.includes('Conseiller'))[0])
     }
     if (props.data || props.edit) {
         emits('update:modelValue', props.data)
@@ -47,24 +48,24 @@ onMounted(async () => {
 })
 
 const getItems = (type) => {
-    if (type.includes('identity')) {
+    if (type?.includes('identity')) {
         return inputStore.identityTypes;
-    } else if (type.includes('language')) {
+    } else if (type?.includes('language')) {
         return languageStore.languages;
-    } else if (type.includes('sourcing')) {
+    } else if (type?.includes('sourcing')) {
         return inputStore.sourcingTypes;
-    } else if (type.includes('nationalities')) {
+    } else if (type?.includes('nationalities')) {
         return inputStore.nationalities;
-    } else if (type.includes('fournisseur')) {
+    } else if (type?.includes('fournisseur')) {
         return inputStore.sourcingProviders;
-    } else if (type.includes('situation familiale')) {
+    } else if (type?.includes('situation familiale')) {
         return inputStore.familySituations;
-    } else if (type.includes('profile')) {
+    } else if (type?.includes('profile')) {
         return profileStore.profiles;
-    } else if (type.includes('operation')) {
+    } else if (type?.includes('operation')) {
         console.log(inputStore.operations)
         return inputStore.operations;
-    } else if (type.includes('type départ')) {
+    } else if (type?.includes('type départ')) {
         return inputStore.motifs;
     }
 }
@@ -74,9 +75,9 @@ const getItemOption = (item) => {
 }
 
 const getType = (val) => {
-    if (val.includes('nombre enfants') || val.includes('Numéro CNSS') || val.includes('téléphone')) {
+    if (val?.includes('nombre enfants') || val?.includes('Numéro CNSS') || val?.includes('téléphone') || val?.includes('matricule')) {
         return 'number';
-    } else if (val.includes('date')) {
+    } else if (val?.includes('date')) {
         return 'date';
     } else {
         return 'text'
@@ -101,25 +102,26 @@ const onChangeFile = async (event) => {
 
 <template>
     <div class="mx-3"
-         :class="{'mx-6': val.includes('comment') && !deactivation, 'my-3': deactivation, 'w-1/2': !deactivation && val !== 'solde', 'w-3/4 mx-auto my-4': val=== 'solde'}">
-        <div v-if="!val.includes('solde')" class="block mb-[1rem] font-bold capitalize text-xs text-gray-700">
-            {{ val }}
+         :class="{'mx-6': val?.includes('comment') && !deactivation, 'my-3': deactivation, 'w-1/2': !deactivation && val !== 'solde', 'w-1/6 mb-3': type?.includes('demandesConges'), 'w-3/4 mx-auto my-4': val=== 'solde'}">
+        <div v-if="!val !== 'solde'" class="block mb-[1rem] font-bold capitalize text-xs text-gray-700">
+            {{ val.split('_')[0] }} {{ val.split('_')[1] }}
         </div>
         <slot></slot>
         <input v-if="val === 'solde'" type="file" :disabled="disabled === undefined ? false : disabled"
                @change="(event) => onChangeFile(event)" />
         <input
-            v-if="type !== 'select' && !val.includes('address') && !val.includes('comment') && val !== 'solde'"
+            v-if="type !== 'select' && !val?.includes('address') && !val?.includes('comment') && val !== 'solde'"
             class="rounded-md border border-gray-400 p-2 w-full"
             :type="getType(val)"
             :name="val"
             :id="val"
+            :min="min"
             :value="modelValue"
             :disabled="disabled === undefined ? false : disabled"
             @input="(event) => onInput(event)"
             required
         />
-        <textarea v-if="val.includes('address') || val.includes('comment')"
+        <textarea v-if="val?.includes('address') || val?.includes('comment')"
                   class="w-full border border-black p-1 rounded-md"
                   @input="$emit('update:modelValue', $event.target.value)" :value="modelValue"></textarea>
         <select class="border w-full p-2 border-black rounded-md" v-if="type === 'select'" :value="modelValue"

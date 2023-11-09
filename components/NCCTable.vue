@@ -1,19 +1,34 @@
 <script setup>
 import {useUserStore} from "~/stores/UserStore.js";
-import {useInputStore} from "~/stores/InputStore.js";
+import {useSoldeInputStore} from "~/stores/SoldeInputStore.js";
 import Actions from "~/components/Actions.vue";
+import {useDemandeCongeInputStore} from "~/stores/DemandeCongeInputStore.js";
 
-let inputStore = useInputStore()
+const props = defineProps({
+  type: String
+})
+
+let inputStore = useSoldeInputStore()
 
 let userStore = useUserStore()
+let demandInputStore = useDemandeCongeInputStore()
+
+console.log(props.type)
 
 </script>
 
 <template>
     <div v-if="inputStore.loadingTable">Loading...</div>
-    <table v-if="userStore.users?.data && !inputStore.loadingTable" class="table-auto mx-auto bg-white">
+    <table v-if="userStore.users?.data && !inputStore.loadingTable || type === 'demandesConges'" class="table-auto mx-auto bg-white">
         <thead>
-        <tr class="border-2">
+        <tr class="border-2" v-if="type === 'demandesConges'">
+          <th class="px-2 border-2">Matricule</th>
+          <th class="px-2 border-2">Date demande</th>
+          <th class="px-2 border-2">Date retour</th>
+          <th class="px-2 border-2">Période</th>
+          <th class="px-2 border-2">Etat demande</th>
+        </tr>
+        <tr v-if="type === 'soldes'" class="border-2">
             <th class="px-2 border-2">Photo</th>
             <th class="px-2 border-2">Matricule</th>
             <th class="px-2 border-2">Nom / Prènom</th>
@@ -28,7 +43,14 @@ let userStore = useUserStore()
         </tr>
         </thead>
         <tbody class="border-2">
-        <tr class="text-center" :class="{'bg-red-100': !userStore.searchedUser?.active}" v-if="userStore.searchedUser !== 'null'">
+        <tr class="text-center" v-for="demand in demandInputStore.demands?.data" v-if="type === 'demandesConges'">
+          <td class="px-2 border-2">{{ demand?.user?.matricule }}</td>
+          <td class="px-2 border-2">{{ demand?.date_demande }}</td>
+          <td class="px-2 border-2">{{ demand?.date_retour }}</td>
+          <td class="px-2 border-2">{{ demand?.periode }}</td>
+          <td class="px-2 border-2">{{ demand?.demand?.etat_demande }}</td>
+        </tr>
+        <tr class="text-center" :class="{'bg-red-100': !userStore.searchedUser?.active}" v-if="userStore.searchedUser !== 'null' && type === 'soldes'">
             <td class="px-2 border-2"></td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.matricule }}</td>
             <td class="px-2 border-2">{{ userStore.searchedUser?.first_name }} / {{
@@ -44,7 +66,7 @@ let userStore = useUserStore()
             <td class="px-2 border-2">{{ userStore.searchedUser?.solde_rjf }}</td>
             <Actions :user="userStore.searchedUser" />
         </tr>
-        <tr class="text-center" :class="{'bg-red-100': !user?.active}" v-if="userStore.searchedUser === 'null'" v-for="user in userStore.users?.data">
+        <tr class="text-center" :class="{'bg-red-100': !user?.active}" v-if="userStore.searchedUser === 'null' && type === 'soldes'" v-for="user in userStore.users?.data">
             <td class="px-2 border-2"></td>
             <td class="px-2 border-2">{{ user?.matricule }}</td>
             <td class="px-2 border-2">{{ user?.first_name }} / {{ user?.last_name }}</td>

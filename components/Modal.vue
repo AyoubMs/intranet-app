@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import FormInput from "~/components/FormInput.vue";
-import {useInputStore} from "~/stores/InputStore";
+import {useSoldeInputStore} from "~/stores/SoldeInputStore";
 import {useUserStore} from "~/stores/UserStore";
 import InputType from "~/components/InputType.vue";
 import RadioOrCheckboxInput from "~/components/RadioOrCheckboxInput.vue";
@@ -14,11 +14,12 @@ const props = defineProps({
     affectation: Boolean,
     deactivation: Boolean,
     increaseSolde: Boolean,
+    demandeConge: Boolean,
     user: Object,
     filterData: Object
 })
 
-let inputStore = useInputStore()
+let inputStore = useSoldeInputStore()
 
 let userStore = useUserStore()
 
@@ -195,8 +196,8 @@ const triggerSoldeInjectionInTheBackend = async () => {
     inputStore.beginSendingUserData()
     await userStore.increaseSoldes($apiFetch).then(async () => {
         inputStore.finishSendingUserData();
-        // closeModal()
-        // await refreshTableData()
+        closeModal()
+        await refreshTableData()
     }).catch(err => {
         console.log(err)
     })
@@ -223,6 +224,8 @@ const getTitle = () => {
         return 'Départ employé'
     } else if (props.increaseSolde) {
         return 'Augmenter Soldes'
+    } else if (props.demandeConge) {
+        return 'Fiche demande congé'
     } else {
         return 'Informations utilisateur'
     }
@@ -231,6 +234,39 @@ const getTitle = () => {
 let increaseSoldeFormData = ref({
     increaseSoldeFile: null
 })
+
+const demandeCongeForm = ref({
+    matricule: null,
+    date_retour: null,
+    solde: 0,
+    date_debut: null,
+    date_fin: null
+})
+
+onMounted(() => {
+    demandeCongeForm.value.matricule = userStore.user?.matricule;
+    demandeCongeForm.value.solde = Number(userStore.user?.solde_cp ?? 0) + Number(userStore.user?.solde_rjf ?? 0)
+})
+
+watch(demandeCongeForm, () => {
+    console.log(demandeCongeForm.value)
+}, { deep: true })
+
+const getValidationState = () => {
+    if (!props.demandeConge) {
+        return !inputStore.checkFile
+    } else {
+        return Object.values(demandeCongeForm.value).includes(null)
+    }
+}
+
+const getMinDate = () => {
+    if (!userStore.user?.role?.name?.includes('Opérations')) {
+        return (new Date()).toISOString().split('T')[0]
+    } else {
+        return '1980-01-01'
+    }
+}
 
 </script>
 
@@ -247,14 +283,25 @@ let increaseSoldeFormData = ref({
             </header>
 
             <div v-if="inputStore.sendingUser">Loading...</div>
-            <div v-if="increaseSolde && !inputStore.sendingUser">
+            <div v-if="demandeConge">
+                <div class="px-3 my-3 flex">
+                    <FormInput val="matricule" :disabled="!userStore.user?.role?.name?.includes('Opérations')" v-model="demandeCongeForm.matricule" :data="userStore.user?.matricule" />
+                    <FormInput val="solde total" :disabled="true" v-model="demandeCongeForm.solde" />
+                    <FormInput val="date_retour" :min="demandeCongeForm.date_fin" :disabled="demandeCongeForm.date_debut === null || demandeCongeForm.date_fin === null" v-model="demandeCongeForm.date_retour" />
+                </div>
+                <div class="px-3 my-3 flex">
+                    <FormInput val="date_debut" :min="getMinDate()"  v-model="demandeCongeForm.date_debut" />
+                    <FormInput val="date_fin" :min="getMinDate()" v-model="demandeCongeForm.date_fin" />
+                </div>
+            </div>
+            <div v-if="increaseSolde && !inputStore.sendingUser && !demandeConge">
                 <FormInput v-model="increaseSoldeFormData.increaseSoldeFile" val="solde">
                     <div v-if="inputStore.injectionErrors?.injectionError && !edit" class="text-xs text-red-500">
                         {{ inputStore.injectionErrors?.injectionError }}
                     </div>
                 </FormInput>
             </div>
-            <div v-if="deactivation && !inputStore.sendingUser" class="text-left flex flex-col">
+            <div v-if="deactivation && !inputStore.sendingUser && !demandeConge" class="text-left flex flex-col">
                 <div class="p-6">
                     <FormInput :disabled="true" :deactivation="deactivation" :data="user?.matricule"
                                v-model="deactivationFormData.matricule" val="matricule"/>
@@ -275,7 +322,7 @@ let increaseSoldeFormData = ref({
                                :data="user?.comment?.leave_comment" val="comment"/>
                 </div>
             </div>
-            <div v-if="affectation && !inputStore.sendingUser" class="text-left">
+            <div v-if="affectation && !inputStore.sendingUser && !demandeConge" class="text-left">
                 <div class="p-3 flex">
                     <FormInput :disabled="true" :data="user?.matricule" v-model="affectationFormData.matricule"
                                val="matricule"/>
@@ -295,7 +342,7 @@ let increaseSoldeFormData = ref({
                                :data="user?.operation?.name" val="operation principale"/>
                 </div>
             </div>
-            <div v-if="!increaseSolde && !inputStore.sendingUser && !affectation && !deactivation" class="text-left">
+            <div v-if="!increaseSolde && !inputStore.sendingUser && !affectation && !deactivation && !demandeConge" class="text-left">
                 <div class="p-3 flex">
                     <FormInput :disabled="addOrEditFormData.edit_matricule && edit"
                                v-model="addOrEditFormData.matricule"
@@ -416,8 +463,8 @@ let increaseSoldeFormData = ref({
             <footer class="flex mx-6 my-3 bg-gray-200 p-3" v-if="!inputStore.sendingUser">
                 <button class="mr-auto text-black bg-gray-100 p-2 rounded-md" @click.prevent="$emit('close')">Cancel
                 </button>
-                <button class="bg-cyan-500 text-white p-2 rounded-md" :class="{'!bg-gray-500': !inputStore.checkFile}"
-                        @click.prevent="sendDataToBackend()" :disabled="!inputStore.checkFile">Valider
+                <button class="bg-cyan-500 text-white p-2 rounded-md" :class="{'!bg-gray-500': getValidationState()}"
+                        @click.prevent="sendDataToBackend()" :disabled="getValidationState()">Valider
                 </button>
             </footer>
         </div>

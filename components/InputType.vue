@@ -3,9 +3,10 @@ import DropdownElement from "~/components/DropdownElement.vue";
 import {useTeamStore} from "~/stores/TeamStore.js";
 import {useProfilesStore} from "~/stores/ProfilesStore.js";
 import {useLanguagesStore} from "~/stores/LanguagesStore.js";
-import {useInputStore} from "~/stores/InputStore.js";
+import {useSoldeInputStore} from "~/stores/SoldeInputStore.js";
 import {debounce, forEach} from "lodash";
 import {useUserStore} from "~/stores/UserStore.js";
+import {useDemandeCongeInputStore} from "~/stores/DemandeCongeInputStore.js";
 
 const props = defineProps({
   title: String,
@@ -28,7 +29,7 @@ let languageStore = useLanguagesStore()
 onMounted(async () => {
   switch (props.val) {
     case 'team':
-      await teamStore.fetchTeams($apiFetch, inputStore.status, '', props.affectation).catch(err => console.log(err))
+      await teamStore.fetchTeams($apiFetch, soldeInputStore.status, '', props.affectation).catch(err => console.log(err))
         props.user?.managers?.forEach((item) => {
           item?.operations?.forEach((operation) => {
             if (!teamStore.selectedAffectationTeams.includes(operation?.name)) {
@@ -115,11 +116,13 @@ let selectSingleItem = (input, type) => {
   }
 }
 
-let inputStore = useInputStore();
+let soldeInputStore = useSoldeInputStore();
 
-watch(inputStore, async function () {
+let demandesCongesInputStore = useDemandeCongeInputStore()
+
+watch(soldeInputStore, async function () {
   if (props.val === 'team') {
-    await teamStore.fetchTeams($apiFetch, inputStore.status, '', props.affectation)
+    await teamStore.fetchTeams($apiFetch, soldeInputStore.status, '', props.affectation)
   }
 }, {deep: true})
 
@@ -142,7 +145,7 @@ const searchDropDown = () => {
     controlWithSearch.value = false
     switch (props.val) {
       case 'team':
-        await teamStore.fetchTeams($apiFetch, inputStore.status, searchInput.value, props.affectation)
+        await teamStore.fetchTeams($apiFetch, soldeInputStore.status, searchInput.value, props.affectation)
         break;
       case 'profile':
         await profilesStore.fetchProfiles($apiFetch, searchInput.value)
@@ -157,7 +160,7 @@ const searchDropDown = () => {
 
 const getLoadingState = (type) => {
   if (type === 'team') {
-    return !inputStore.loadingTeams;
+    return !soldeInputStore.loadingTeams;
   } else {
     return true;
   }
@@ -178,6 +181,8 @@ const getDataByVal = (val) => {
   }
 }
 
+const demandeCongeInputStore = useDemandeCongeInputStore()
+
 </script>
 
 <template>
@@ -185,21 +190,64 @@ const getDataByVal = (val) => {
     <div class="block mb-2 uppercase font-bold text-xs text-gray-700">
       {{ title }}
     </div>
+    <input v-if="type === 'date' && val === 'date_fin_conge_debut'" class="border border-gray-400 p-2 w-full"
+           :type="type"
+           :name="val"
+           :id="val"
+           v-model="demandesCongesInputStore.dateFinCongeDebut"
+           required
+    />
+    <input v-if="type === 'date' && val === 'date_fin_conge_fin'" class="border border-gray-400 p-2 w-full"
+           :type="type"
+           :name="val"
+           :id="val"
+           v-model="demandesCongesInputStore.dateFinCongeFin"
+           required
+    />
+    <input v-if="type === 'date' && val === 'date_debut_conge_debut'" class="border border-gray-400 p-2 w-full"
+           :type="type"
+           :name="val"
+           :id="val"
+           v-model="demandesCongesInputStore.dateDebutCongeDebut"
+           required
+    />
+    <input v-if="type === 'date' && val === 'date_debut_conge_fin'" class="border border-gray-400 p-2 w-full"
+           :type="type"
+           :name="val"
+           :id="val"
+           v-model="demandesCongesInputStore.dateDebutCongeFin"
+           required
+    />
+    <input v-if="type === 'date' && val === 'date_demande_fin'" class="border border-gray-400 p-2 w-full"
+           :type="type"
+           :name="val"
+           :id="val"
+           v-model="demandesCongesInputStore.dateDemandeFin"
+           required
+    />
+    <input v-if="type === 'date' && val === 'date_demande_debut'" class="border border-gray-400 p-2 w-full"
+           :type="type"
+           :name="val"
+           :id="val"
+           v-model="demandesCongesInputStore.dateDebutCongeDebut"
+           required
+    />
     <input v-if="type === 'date' && val === 'date_mep_debut'" class="border border-gray-400 p-2 w-full"
            :type="type"
            :name="val"
            :id="val"
-           v-model="inputStore.dateDebut"
+           v-model="soldeInputStore.dateDebut"
            required
     />
     <input v-if="type === 'date' && val === 'date_mep_fin'" class="border border-gray-400 p-2 w-full"
            :type="type"
            :name="val"
            :id="val"
-           v-model="inputStore.dateFin"
+           v-model="soldeInputStore.dateFin"
            required
     />
-    <div v-if="!getDataByVal(val) && type !== 'date'">Loading...</div>
+      <input v-if="type !== 'date' && val==='demandeCongesMatricule'" :type="type" class="border border-gray-400 p-2 w-1/4" v-model="demandesCongesInputStore.matricule" min="10000" max="99999" />
+    <div v-if="!getDataByVal(val) && type !== 'date' && type !== 'number'">Loading...</div>
     <div class="w-full flex flex-col items-center mx-auto justify-end"
          v-if="getDataByVal(val) && type !== 'date' ">
       <div class="!w-full">
@@ -226,7 +274,7 @@ const getDataByVal = (val) => {
       <div class="shadow bg-white z-40 h-40 w-full lef-0 rounded max-h-select overflow-y-auto svelte-5uyqqj"
            v-if="openDropDown">
         <div v-if="!controlWithSearch">Loading...</div>
-        <div v-if="inputStore.loadingTeams && val === 'team'">Loading...</div>
+        <div v-if="soldeInputStore.loadingTeams && val === 'team'">Loading...</div>
         <div class="flex flex-col w-full" v-if="controlWithSearch && getLoadingState(val)">
           <div v-for="(item, index) in getDataByVal(val)" :key="index"
                class="w-full border-gray-100 rounded-t border-b">
