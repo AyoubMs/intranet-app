@@ -64,7 +64,7 @@ let affectationFormData = ref({
     profile: null,
     teams: null,
     date_entree_formation: null,
-    principal_operation: null
+    principal_operation: null,
 })
 
 let deactivationFormData = ref({
@@ -103,6 +103,7 @@ const closeModal = () => {
     userStore.refreshAddingUserErrors()
     userStore.refreshEditingUserErrors()
     inputStore.refreshInjectionErrors()
+    teamStore.refreshAffectationTeams();
     inputStore.checkFile = false;
 }
 
@@ -111,6 +112,7 @@ const sendFormDataToBackend = async () => {
     await userStore.addUser($apiFetch, addOrEditFormData.value).then(() => {
         inputStore.finishSendingUserData();
         if (!Object.entries(userStore.addingUserErrors).length) {
+            teamStore.refreshAffectationTeams();
             closeModal();
         }
     }).catch(err => {
@@ -123,6 +125,7 @@ const updateUser = async () => {
     await userStore.editUser($apiFetch, addOrEditFormData.value).then(() => {
         inputStore.finishSendingUserData();
         if (!Object.entries(userStore.editingUserErrors).length) {
+            teamStore.refreshAffectationTeams();
             closeModal()
         }
     }).catch(err => {
@@ -166,10 +169,12 @@ async function refreshTableData() {
 }
 
 const sendAffectationDataToBackend = async () => {
-    affectationFormData.value.teams = teamStore.selectedAffectationTeams
+    affectationFormData.value.teams = [...teamStore.selectedAffectationTeams]
+    console.log(teamStore.selectedTeams)
     inputStore.beginSendingUserData();
     await userStore.affectUser($apiFetch, affectationFormData.value).then(() => {
         inputStore.finishSendingUserData();
+        teamStore.refreshAffectationTeams();
         closeModal();
     }).catch(err => {
         console.log(err)
@@ -183,6 +188,7 @@ const deactivateUserInTheBackend = async () => {
     await userStore.deactivateUser($apiFetch, deactivationFormData.value).then(async () => {
         inputStore.finishSendingUserData();
         if (!Object.entries(userStore.deactivatingUserErrors).length) {
+            teamStore.refreshAffectationTeams();
             closeModal()
             await refreshTableData()
         }
@@ -196,6 +202,7 @@ const triggerSoldeInjectionInTheBackend = async () => {
     inputStore.beginSendingUserData()
     await userStore.increaseSoldes($apiFetch).then(async () => {
         inputStore.finishSendingUserData();
+        teamStore.refreshAffectationTeams();
         closeModal()
         await refreshTableData()
     }).catch(err => {
@@ -206,7 +213,7 @@ const triggerSoldeInjectionInTheBackend = async () => {
 const sendDataToBackend = () => {
     if (props.edit) {
         return updateUser();
-    } else if (!props.edit && !props.affectation && !props.deactivation && !props.increaseSolde) {
+    } else if (!props.edit && !props.affectation && !props.deactivation && !props.increaseSolde && !props.demandeConge) {
         return sendFormDataToBackend()
     } else if (props.affectation) {
         return sendAffectationDataToBackend();
@@ -253,6 +260,10 @@ watch(demandeCongeForm, () => {
 }, { deep: true })
 
 const getValidationState = () => {
+    console.log(deactivationFormData.value, "here")
+    if (props.affectation || props.edit || deactivationFormData.value?.date_depart) {
+        return false
+    }
     if (!props.demandeConge) {
         return !inputStore.checkFile
     } else {
@@ -461,7 +472,7 @@ const getMinDate = () => {
             </div>
 
             <footer class="flex mx-6 my-3 bg-gray-200 p-3" v-if="!inputStore.sendingUser">
-                <button class="mr-auto text-black bg-gray-100 p-2 rounded-md" @click.prevent="$emit('close')">Cancel
+                <button class="mr-auto text-black bg-gray-100 p-2 rounded-md" @click.prevent="closeModal()">Cancel
                 </button>
                 <button class="bg-cyan-500 text-white p-2 rounded-md" :class="{'!bg-gray-500': getValidationState()}"
                         @click.prevent="sendDataToBackend()" :disabled="getValidationState()">Valider

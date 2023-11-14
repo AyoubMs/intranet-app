@@ -50,7 +50,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-gauge',
                 link:
-                    '/publications'
+                    '#'
             }
             ,
             {
@@ -58,7 +58,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-gauge',
                 link:
-                    '/tokens'
+                    '#'
             }
             ,
             {
@@ -66,7 +66,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-gauge',
                 link:
-                    '/Questionnaires'
+                    '#'
             }
         ]
     },
@@ -77,14 +77,14 @@ const navRoutes = ref({
             {
                 title: 'Gestion des employés',
                 icon: 'fa-solid fa-users',
-                link: '/users'
+                link: '#'
             },
             {
                 title: 'Jours fériés',
                 icon:
                     'fa-regular fa-calendar-xmark',
                 link:
-                    '/Administration/Jours/feries'
+                    '#'
             }
             ,
             {
@@ -92,7 +92,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-gauge',
                 link:
-                    '/rh/presence/rjf'
+                    '#'
             }
             ,
             {
@@ -100,7 +100,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-lock',
                 link:
-                    '/Droits/Acces'
+                    '#'
             }
             ,
             {
@@ -108,7 +108,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-address-card',
                 link:
-                    'profilesettings/index'
+                    '#'
             }
         ]
     },
@@ -119,7 +119,7 @@ const navRoutes = ref({
             {
                 title: 'Suivi du solde (CP & RJF)',
                 icon: 'fa-solid fa-rotate-left',
-                link: '/Utilisateur/suivi/solde'
+                link: '#'
             },
             {
                 title: 'Saisie/Suivi des demandes',
@@ -134,7 +134,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-database',
                 link:
-                    '/validation/conges'
+                    '#'
             }
             ,
             {
@@ -142,7 +142,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-circle-minus',
                 link:
-                    '/validation/demandes/annules'
+                    '#'
             }
             ,
             {
@@ -150,7 +150,7 @@ const navRoutes = ref({
                 icon:
                     'fa-solid fa-rotate-left',
                 link:
-                    '/Historique/Admin/conges'
+                    '#'
             }
         ]
     },
@@ -161,14 +161,14 @@ const navRoutes = ref({
             {
                 title: 'Demandes documents',
                 icon: 'fa-regular fa-file',
-                link: '/Saisie/demande/document'
+                link: '#'
             },
             {
                 title: 'Traitement des documents',
                 icon:
                     'fa-regular fa-square-check',
                 link:
-                    '/Historique/Admin/docs'
+                    '#'
             }
         ]
     },
@@ -179,7 +179,7 @@ const navRoutes = ref({
             {
                 title: 'My NCC awards',
                 icon: 'fa-regular fa-file',
-                link: '/recompenses'
+                link: '#'
             }
         ]
     },
@@ -190,7 +190,7 @@ const navRoutes = ref({
             {
                 title: 'Mes Briefs',
                 icon: 'fa-regular fa-file',
-                link: '/feedback'
+                link: '#'
             }
         ]
     },
@@ -201,14 +201,14 @@ const navRoutes = ref({
             {
                 title: 'Documents GDPR',
                 icon: 'fa-regular fa-file',
-                link: '/Documents'
+                link: '#'
             },
             {
                 title: 'Autres documents',
                 icon:
                     'fa-solid fa-clock-rotate-left',
                 link:
-                    '/Documents/Autres'
+                    '#'
             }
         ]
     },
@@ -220,7 +220,7 @@ const navRoutes = ref({
             {
                 title: 'Workflows',
                 icon: 'fa-regular fa-file',
-                link: '/workflow'
+                link: '#'
             }
         ]
     }
@@ -237,6 +237,16 @@ function layRoute(e: any, object: any) {
 
 function controlNav() {
     openNav.value = !openNav.value
+}
+
+const userStore = useUserStore()
+
+const getConditionOnSpecificPages = (route: any) => {
+    if ((userStore.user?.role?.name.includes('Conseiller') || userStore.user?.role?.name.includes('FR') || userStore.user?.role?.name.includes('NL')) && (route['title'] === 'Suivi des soldes')) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 </script>
@@ -277,7 +287,7 @@ function controlNav() {
                     </NavElement>
                     <div v-if="obj['openRoute']">
                         <div v-for="routeElement in obj['items']">
-                            <NuxtLink class="ml-10 hover:bg-gray-100 cursor-pointer mr-10 py-1 px-2 flex mb-2" :to="routeElement['link']">
+                            <NuxtLink v-if="getConditionOnSpecificPages(routeElement)" class="ml-10 hover:bg-gray-100 cursor-pointer mr-10 py-1 px-2 flex mb-2" :to="routeElement['link']">
                                 <div class="mr-3"><i :class="[routeElement['icon']]"></i></div>
                                 <div>{{ routeElement['title'] }}</div>
                             </NuxtLink>

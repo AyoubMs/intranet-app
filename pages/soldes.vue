@@ -15,7 +15,7 @@ import Modal from "~/components/Modal.vue";
 import Pagination from "~/pages/Pagination.vue";
 
 definePageMeta({
-    middleware: ['auth']
+    middleware: ['auth', 'is-management']
 })
 
 const {$apiFetch}: any = useNuxtApp()

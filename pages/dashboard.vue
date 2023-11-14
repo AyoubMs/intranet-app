@@ -3,6 +3,7 @@ import {definePageMeta} from "#imports";
 import CardContainer from "~/components/CardContainer.vue";
 import DashboardElement from "~/components/DashboardElement.vue";
 import DemandCard from "~/components/DemandCard.vue";
+import {useUserStore} from "~/stores/UserStore";
 
 definePageMeta({
     middleware: ["auth"]
@@ -50,57 +51,65 @@ let demandCards = [
         title: 'Demandes non-traitées',
         footer: 'Traiter les demandes'
     },
-    {
-        textColor: 'text-white',
-        classIcon: 'fa-solid fa-rotate',
-        classFooter: 'hover:bg-[#006ee5]',
-        classHover: 'bg-[#0069d9]',
-        classElem: 'bg-[#007bff]',
-        quantity: 0,
-        title: 'Demandes recours à traiter',
-        footer: 'Traiter les demandes'
-    },
-    {
-        textColor: 'text-white',
-        classIcon: 'fa-solid fa-triangle-exclamation',
-        classFooter: 'bg-[#616970]',
-        classHover: 'hover:bg-[#5C646A]',
-        classElem: 'bg-[#6C757D]',
-        quantity: 0,
-        title: 'Demandes annulées à traiter',
-        footer: 'Traiter les demandes d\'annulation'
-    },
-    {
-        textColor: 'text-white',
-        classIcon: 'fa-solid fa-square-check',
-        classFooter: 'bg-[#24963E]',
-        classHover: 'hover:bg-[#228E3B]',
-        classElem: 'bg-[#28A745]',
-        quantity: 0,
-        title: 'Demandes validées',
-        footer: 'Consulter'
-    },
-    {
-        textColor: 'text-white',
-        classIcon: 'fa-solid fa-circle-minus',
-        classFooter: 'bg-[#C6303E]',
-        classHover: 'hover:bg-[#BB2D3B]',
-        classElem: 'bg-[#DC3545]',
-        quantity: 0,
-        title: 'Demandes rejetées',
-        footer: 'Consulter'
-    },
-    {
-        textColor: 'text-white',
-        classIcon: 'fa-solid fa-circle-info',
-        classFooter: 'bg-[#1591A5]',
-        classHover: 'hover:bg-[#148A9D]',
-        classElem: 'bg-[#17A2B8]',
-        quantity: 0,
-        title: 'Total des demandes traitées',
-        footer: 'Consulter'
-    },
+    // {
+    //     textColor: 'text-white',
+    //     classIcon: 'fa-solid fa-rotate',
+    //     classFooter: 'hover:bg-[#006ee5]',
+    //     classHover: 'bg-[#0069d9]',
+    //     classElem: 'bg-[#007bff]',
+    //     quantity: 0,
+    //     title: 'Demandes recours à traiter',
+    //     footer: 'Traiter les demandes'
+    // },
+    // {
+    //     textColor: 'text-white',
+    //     classIcon: 'fa-solid fa-triangle-exclamation',
+    //     classFooter: 'bg-[#616970]',
+    //     classHover: 'hover:bg-[#5C646A]',
+    //     classElem: 'bg-[#6C757D]',
+    //     quantity: 0,
+    //     title: 'Demandes annulées à traiter',
+    //     footer: 'Traiter les demandes d\'annulation'
+    // },
+    // {
+    //     textColor: 'text-white',
+    //     classIcon: 'fa-solid fa-square-check',
+    //     classFooter: 'bg-[#24963E]',
+    //     classHover: 'hover:bg-[#228E3B]',
+    //     classElem: 'bg-[#28A745]',
+    //     quantity: 0,
+    //     title: 'Demandes validées',
+    //     footer: 'Consulter'
+    // },
+    // {
+    //     textColor: 'text-white',
+    //     classIcon: 'fa-solid fa-circle-minus',
+    //     classFooter: 'bg-[#C6303E]',
+    //     classHover: 'hover:bg-[#BB2D3B]',
+    //     classElem: 'bg-[#DC3545]',
+    //     quantity: 0,
+    //     title: 'Demandes rejetées',
+    //     footer: 'Consulter'
+    // },
+    // {
+    //     textColor: 'text-white',
+    //     classIcon: 'fa-solid fa-circle-info',
+    //     classFooter: 'bg-[#1591A5]',
+    //     classHover: 'hover:bg-[#148A9D]',
+    //     classElem: 'bg-[#17A2B8]',
+    //     quantity: 0,
+    //     title: 'Total des demandes traitées',
+    //     footer: 'Consulter'
+    // },
 ]
+
+let userStore = useUserStore()
+
+const showProcessDemands = () => {
+    return userStore.user?.role?.name.includes('Conseiller') || userStore.user?.role?.name.includes('FR') || userStore.user?.role?.name.includes('NL')
+}
+
+console.log(userStore.user)
 
 </script>
 
@@ -117,7 +126,7 @@ let demandCards = [
                 <template #footer><span class="font-bold">{{ dashboardElement['quantity'] }}</span> {{ dashboardElement['jours'] ? 'jours' : '' }}</template>
             </DashboardElement>
         </CardContainer>
-        <CardContainer>
+        <CardContainer v-if="!showProcessDemands()">
             <DemandCard v-for="demandCard in demandCards" :text-color="demandCard['textColor']" :class-icon="demandCard['classIcon']"
                         :class-footer="demandCard['classFooter']" :class-hover="demandCard['classHover']" :class-elem="demandCard['classElem']">
                 <template #body>

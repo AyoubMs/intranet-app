@@ -8,6 +8,8 @@ import {useSoldeInputStore} from "~/stores/SoldeInputStore";
 import Pagination from "~/pages/Pagination.vue";
 import FormInput from "~/components/FormInput.vue";
 import Modal from "~/components/Modal.vue";
+import {useTeamStore} from "~/stores/TeamStore";
+import {useUserStore} from "~/stores/UserStore";
 
 definePageMeta({
     middleware: ['auth']
@@ -68,7 +70,10 @@ const closeModal = () => {
     showModal.value = false;
 }
 
+let userStore = useUserStore()
+
 onMounted(async () => {
+    demandeCongeInputStore.matricule = userStore.user?.matricule
     await searchBackend()
 })
 
