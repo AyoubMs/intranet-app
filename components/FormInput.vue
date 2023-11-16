@@ -11,7 +11,8 @@ const props = defineProps({
     edit: Boolean,
     deactivation: Boolean,
     disabled: Boolean,
-    min: Date
+    min: Date,
+    max: Date
 })
 
 const {$apiFetch} = useNuxtApp()
@@ -116,6 +117,7 @@ const onChangeFile = async (event) => {
             :name="val"
             :id="val"
             :min="min"
+            :max="max"
             :value="modelValue"
             :disabled="disabled === undefined ? false : disabled"
             @input="(event) => onInput(event)"

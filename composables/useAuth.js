@@ -1,5 +1,6 @@
 export function useAuth() {
     function setUser(name) {
+        removeUser()
         localStorage.setItem('user', JSON.stringify({name}))
     }
 
