@@ -1,4 +1,5 @@
 import {defineStore} from "pinia";
+import {useUserStore} from "~/stores/UserStore.js";
 
 let dateDemandeDebut = ref(null)
 let dateDemandeFin = ref(null)
@@ -20,10 +21,36 @@ export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
     },
 
     actions: {
-        async getAffectedDemands(fetchFunc) {
+        async rejectDemand(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'reject_demand', data}
+            }).then((res) => {
+                const userStore = useUserStore()
+                userStore.assignUser(res)
+            }).catch(err => console.log(err))
+        },
+        async cancelDemand(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'cancel_demand', data}
+            }).then((res) => {
+                const userStore = useUserStore()
+                userStore.assignUser(res)
+            }).catch(err => console.log(err))
+        },
+        async acceptDemand(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand', data}
+            }).then((res) => {
+
+            }).catch(err => console.log(err))
+        },
+        async getAffectedDemands(fetchFunc, data) {
           await fetchFunc('/data', {
               method: 'POST',
-              body: {type: 'affected_demands'}
+              body: {type: 'affected_demands', data}
           }).then((res) => {
               console.log(res)
               this.affectedDemands = res

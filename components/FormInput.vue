@@ -2,6 +2,8 @@
 import {useSoldeInputStore} from "~/stores/SoldeInputStore.js";
 import {useLanguagesStore} from "~/stores/LanguagesStore.js";
 import {useProfilesStore} from "~/stores/ProfilesStore.js";
+import {useUserStore} from "~/stores/UserStore.js";
+import {useAuth} from "~/composables/useAuth.js";
 
 const props = defineProps({
     val: String,
@@ -20,6 +22,8 @@ const {$apiFetch} = useNuxtApp()
 const inputStore = useSoldeInputStore()
 const languageStore = useLanguagesStore()
 const profileStore = useProfilesStore()
+const userStore = useUserStore()
+const {setUser} = useAuth()
 const emits = defineEmits(['update:modelValue'])
 
 onMounted(async () => {
@@ -42,6 +46,10 @@ onMounted(async () => {
     } else if (props.val?.includes('profile')) {
         await profileStore.fetchProfiles($apiFetch)
         emits('update:modelValue', profileStore.profiles.filter(data => data?.includes('Conseiller'))[0])
+    } else if (props.val?.includes('solde total')) {
+        await userStore.fetchUser($apiFetch, setUser).then(() => {
+            emits('update:modelValue', Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf))
+        }).catch(err => console.log(err))
     }
     if (props.data || props.edit) {
         emits('update:modelValue', props.data)

@@ -126,7 +126,7 @@ onMounted(async () => {
   await userStore.fetchUser($apiFetch, setUser)
   demandCards.forEach((async (demand) => {
     if (demand.title === 'Demandes non-traitées' && !checkRoleName() && userStore.user) {
-      await demandeCongeInputStore.getAffectedDemands($apiFetch).catch(err => console.log(err))
+      await demandeCongeInputStore.getAffectedDemands($apiFetch, userStore.user?.matricule).catch(err => console.log(err))
       showProcessDemandsVariable.value = true
     }
   }))
@@ -137,7 +137,7 @@ const showProcessDemands = () => {
 }
 
 const getDemandCardQuantity = (demandCard: any) => {
-  demandCard.quantity = demandeCongeInputStore.affectedDemands?.length
+  demandCard.quantity = demandeCongeInputStore.affectedDemands
   return demandCard.quantity
 }
 
@@ -148,7 +148,7 @@ const getDashboardElementQuantity = (dashboardElement: any) => {
   } else if (dashboardElement['type'].includes('CP')) {
     return userStore.user?.solde_cp
   } else if (dashboardElement['type'].includes('en cours')) {
-    return userStore.user?.demandes_en_cours.length
+    return userStore.user?.demandes_en_cours?.length
   } else if (dashboardElement['type'].includes('Total')) {
     return userStore.user?.totalDesDemandes
   }

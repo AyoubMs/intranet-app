@@ -16,6 +16,9 @@ export let useUserStore = defineStore('user', {
     },
 
     actions: {
+        assignUser(user) {
+            this.user = user
+        },
         async increaseSoldes(fetchFunc) {
             await fetchFunc('/data', {
                 method: 'POST',
