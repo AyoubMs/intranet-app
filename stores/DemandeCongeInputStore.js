@@ -12,15 +12,24 @@ let latestDemand = ref(null)
 let affectedDemands = ref(null)
 let demandeConge = ref(null)
 let demands = ref([])
+let typesConge = ref([])
 
 export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
     state() {
         return {
-            dateDemandeDebut, dateDemandeFin, dateDebutCongeDebut, dateDebutCongeFin, dateFinCongeDebut, dateFinCongeFin, matricule, demands, demandeConge, latestDemand, affectedDemands
+            dateDemandeDebut, dateDemandeFin, dateDebutCongeDebut, dateDebutCongeFin, dateFinCongeDebut, dateFinCongeFin, matricule, demands, demandeConge, latestDemand, affectedDemands, typesConge
         }
     },
 
     actions: {
+        async getAllTypesConge(fetchFunc) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'type_demand_conge'}
+            }).then((data) => {
+                this.typesConge = data
+            })
+        },
         async rejectDemand(fetchFunc, data) {
             await fetchFunc('/data', {
                 method: 'POST',

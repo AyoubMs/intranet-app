@@ -113,9 +113,11 @@ let demandeCongeInputStore = useDemandeCongeInputStore()
 let showProcessDemandsVariable = ref(false)
 
 const checkRoleName = () => {
-  if (userStore.user?.role?.name?.includes('Conseiller') || userStore.user?.role?.name?.includes('FR') || userStore.user?.role?.name?.includes('NL')) {
+  const roleName = userStore.user?.role?.name;
+  const isAgent = roleName?.toLowerCase().includes('conseiller') || roleName?.toLowerCase().includes('agent')
+  if (isAgent) {
     return true
-  } else {
+  }  else {
     return false
   }
 }
@@ -132,12 +134,8 @@ onMounted(async () => {
   }))
 })
 
-const showProcessDemands = () => {
-  return userStore.user?.role?.name.includes('Conseiller') || userStore.user?.role?.name.includes('FR') || userStore.user?.role?.name.includes('NL')
-}
-
 const getDemandCardQuantity = (demandCard: any) => {
-  demandCard.quantity = demandeCongeInputStore.affectedDemands
+  demandCard.quantity = demandeCongeInputStore.affectedDemands === '' ? 0 : demandeCongeInputStore.affectedDemands
   return demandCard.quantity
 }
 

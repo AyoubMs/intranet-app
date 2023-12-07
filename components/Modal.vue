@@ -87,7 +87,9 @@ const demandeCongeForm = ref({
     date_retour: null,
     solde: 0,
     date_debut: null,
-    date_fin: null
+    date_fin: null,
+    nombre_jours: null,
+    type_conge: null
 })
 
 const refreshDemandeCongeForm = () => {
@@ -99,6 +101,8 @@ const refreshDemandeCongeForm = () => {
 let cinNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'CIN')[0]?.identity_number)
 let passportNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'Passeport')[0]?.identity_number)
 let carteSejourNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'Carte sejour')[0]?.identity_number);
+
+const isSupervisor = userStore?.user?.role?.name?.toLowerCase().includes('superviseur')
 
 watch(userStore.addingUserErrors, () => {
     console.log(userStore.addingUserErrors)
@@ -380,7 +384,7 @@ const getValidationState = () => {
     if (!props.demandeConge) {
         return !inputStore.checkFile
     } else {
-        return Object.values(demandeCongeForm.value).includes(null)
+        return Object.values(demandeCongeForm.value).includes(null) || Object.values(demandeCongeForm.value).includes("")
     }
 }
 
@@ -402,7 +406,7 @@ const getMinDate = (date_retour: any|null|undefined = undefined, date_debut: any
 }
 
 const getMaxDate = () => {
-    const date = new Date(getMinDate(demandeCongeForm.value.date_debut, true))
+    const date = new Date(getMinDate(demandeCongeForm?.value?.date_debut, true))
     date.setDate(date.getDate() + demandeCongeForm.value.solde)
     return date.toISOString().split('T')[0]
 }
@@ -419,10 +423,15 @@ const getDateRetourMinDate = (date_min: any) => {
     return date.toISOString().split('T')[0]
 }
 
+const isHR = userStore.user?.role?.name?.toLowerCase().includes('rh') || userStore.user?.role?.name?.toLowerCase()?.includes('humain')
+const isOpsManager = userStore.user?.role?.name?.toLowerCase().includes('opération');
+const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || userStore.user?.role?.name?.toLowerCase()?.includes('cps') || userStore.user?.role?.name?.toLowerCase().includes('vigie') || userStore.user?.role?.name?.toLowerCase().includes('correction')
+
+
 </script>
 
 <template>
-    <div v-if="show" class="modal-mask overflow-y-auto" :class="{'opacity-20': accept || reject}">
+    <div v-if="show" class="modal-mask overflow-y-auto bg-black/[.6]" :class="[{'!bg-black/[.3]': (accept || reject || cancel) && !isSupervisor && !isHR && !isOpsManager}, {'!bg-black/[.1]': (accept || reject || cancel) && isOpsManager}, {'opacity-60': (isHR) && !edit && !affectation}, {'opacity-50': isSupervisor && !edit && !affectation}]">
         <div class="modal-container">
             <header class="text-white bg-blue-700 p-3">
                 <div class="flex items-center">
@@ -440,24 +449,26 @@ const getDateRetourMinDate = (date_min: any) => {
             <div v-if="inputStore.sendingUser">Loading...</div>
             <div v-if="demandeConge && !inputStore.sendingUser && !accept && !reject && !cancel">
                 <div class="px-3 my-3 flex">
-                    <FormInput val="matricule" :disabled="!userStore.user?.role?.name?.includes('Opérations')"
+                    <FormInput :key="1" val="matricule" :disabled="!userStore.user?.role?.name?.includes('Opérations')"
                                v-model="demandeCongeForm.matricule" :data="userStore.user?.matricule"/>
-                    <FormInput val="solde total" :disabled="true" v-model="demandeCongeForm.solde"/>
-                    <FormInput val="date_retour" :min="getDateRetourMinDate(demandeCongeForm.date_fin)"
+                    <FormInput :key="2" val="solde total" :disabled="true" v-model="demandeCongeForm.solde"/>
+                    <FormInput :key="3" val="date_retour" :min="getDateRetourMinDate(demandeCongeForm.date_fin)"
                                :max="getMaxDate()"
                                :disabled="demandeCongeForm.date_debut === null || demandeCongeForm.date_fin === null"
                                v-model="demandeCongeForm.date_retour"/>
                 </div>
                 <div class="px-3 my-3 flex">
-                    <FormInput val="date_debut" :disabled="demandeCongeForm.solde === 0" :min="getMinDate()"
+                    <FormInput :key="1" val="date_debut" :disabled="demandeCongeForm.solde === 0" :min="getMinDate()"
                                v-model="demandeCongeForm.date_debut"/>
-                    <FormInput val="date_fin" :disabled="demandeCongeForm.solde === 0"
+                    <FormInput :key="2" val="date_fin" :disabled="demandeCongeForm.solde === 0 || demandeCongeForm.date_debut === null"
                                :min="getMinDate(demandeCongeForm.date_debut, true)" :max="getMaxDate()"
                                v-model="demandeCongeForm.date_fin"/>
+                    <FormInput :key="3" v-model="demandeCongeForm.nombre_jours" val="nombre jours" />
+                    <FormInput val="type de congé" v-model="demandeCongeForm.type_conge" type="select" />
                 </div>
             </div>
             <div v-if="increaseSolde && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel">
-                <FormInput v-model="increaseSoldeFormData.increaseSoldeFile" val="solde">
+                <FormInput :key="1" v-model="increaseSoldeFormData.increaseSoldeFile" val="solde">
                     <div v-if="inputStore.injectionErrors?.injectionError && !edit" class="text-xs text-red-500">
                         {{ inputStore.injectionErrors?.injectionError }}
                     </div>
@@ -465,12 +476,12 @@ const getDateRetourMinDate = (date_min: any) => {
             </div>
             <div v-if="deactivation && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel" class="text-left flex flex-col">
                 <div class="p-6">
-                    <FormInput :disabled="true" :deactivation="deactivation" :data="user?.matricule"
+                    <FormInput :key="1" :disabled="true" :deactivation="deactivation" :data="user?.matricule"
                                v-model="deactivationFormData.matricule" val="matricule"/>
-                    <FormInput :disabled="true" :deactivation="deactivation"
+                    <FormInput :key="2" :disabled="true" :deactivation="deactivation"
                                :data="user?.first_name + ' ' + user?.last_name"
                                v-model="deactivationFormData.name" val="nom et prénom"/>
-                    <FormInput :deactivation="deactivation" :data="user?.date_depart"
+                    <FormInput :key="3" :deactivation="deactivation" :data="user?.date_depart"
                                v-model="deactivationFormData.date_depart" val="date départ">
                         <div v-if="userStore.deactivatingUserErrors?.date_depart && !edit"
                              v-for="error in userStore.deactivatingUserErrors?.date_depart"
@@ -478,36 +489,36 @@ const getDateRetourMinDate = (date_min: any) => {
                             {{ error }}
                         </div>
                     </FormInput>
-                    <FormInput type="select" :deactivation="deactivation" :data="user?.motif?.name"
+                    <FormInput :key="4" type="select" :deactivation="deactivation" :data="user?.motif?.name"
                                v-model="deactivationFormData.type_depart" val="type départ"/>
-                    <FormInput :deactivation="deactivation" v-model="deactivationFormData.comment"
+                    <FormInput :key="5" :deactivation="deactivation" v-model="deactivationFormData.comment"
                                :data="user?.comment?.leave_comment" val="comment"/>
                 </div>
             </div>
             <div v-if="affectation && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel" class="text-left">
                 <div class="p-3 flex">
-                    <FormInput :disabled="true" :data="user?.matricule" v-model="affectationFormData.matricule"
+                    <FormInput :key="1" :disabled="true" :data="user?.matricule" v-model="affectationFormData.matricule"
                                val="matricule"/>
-                    <FormInput type="select" v-model="affectationFormData.profile" :data="user?.role?.name"
+                    <FormInput :key="2" type="select" v-model="affectationFormData.profile" :data="user?.role?.name"
                                val="profile"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput :disabled="true" :data="user?.first_name + ' ' + user?.last_name"
+                    <FormInput :key="1" :disabled="true" :data="user?.first_name + ' ' + user?.last_name"
                                v-model="affectationFormData.name" val="name"/>
-                    <InputType :user="user" :affectation="affectation" val="team" :modal="true" type="text" title="Team"/>
+                    <InputType :key="2" :user="user" :affectation="affectation" val="team" :modal="true" type="text" title="Team"/>
                 </div>
                 <div class="p-3 flex">
-                    <FormInput type="date" v-model="affectationFormData.date_entree_formation"
+                    <FormInput :key="1" type="date" v-model="affectationFormData.date_entree_formation"
                                val="date début formation"/>
-                    <FormInput type="select" v-model="affectationFormData.principal_operation"
+                    <FormInput :key="2" type="select" v-model="affectationFormData.principal_operation"
                                :data="user?.operation?.name" val="operation principale"/>
                 </div>
             </div>
             <div v-if="!accept && !reject && !cancel && !increaseSolde && !inputStore.sendingUser && !affectation && !deactivation && !demandeConge"
                  class="text-left">
                 <div class="p-3 flex">
-                    <FormInput :disabled="addOrEditFormData.edit_matricule && edit"
+                    <FormInput :key="1" :disabled="addOrEditFormData.edit_matricule && edit"
                                v-model="addOrEditFormData.matricule"
                                :data="user?.matricule" val="matricule">
                         <div v-if="edit">changer matricule <input type="checkbox"
@@ -523,7 +534,7 @@ const getDateRetourMinDate = (date_min: any) => {
                             {{ error }}
                         </div>
                     </FormInput>
-                    <FormInput :disabled="addOrEditFormData.edit_email && edit" v-model="addOrEditFormData.email_1"
+                    <FormInput :key="2" :disabled="addOrEditFormData.edit_email && edit" v-model="addOrEditFormData.email_1"
                                :data="user?.email_1" val="e-mail">
                         <div v-if="edit">changer email <input type="checkbox" :value="!addOrEditFormData.edit_email"
                                                               :checked="!addOrEditFormData.edit_email"
@@ -542,13 +553,13 @@ const getDateRetourMinDate = (date_min: any) => {
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.nom" :data="user?.first_name" val="nom">
+                    <FormInput :key="1" v-model="addOrEditFormData.nom" :data="user?.first_name" val="nom">
                         <div v-if="userStore.addingUserErrors?.nom && !edit"
                              v-for="error in userStore.addingUserErrors?.nom"
                              class="text-xs text-red-500">{{ error }}
                         </div>
                     </FormInput>
-                    <FormInput v-model="addOrEditFormData.prenom" :data="user?.last_name" val="prenom">
+                    <FormInput :key="2" v-model="addOrEditFormData.prenom" :data="user?.last_name" val="prenom">
                         <div v-if="userStore.addingUserErrors?.prenom && !edit"
                              v-for="error in userStore.addingUserErrors?.prenom"
                              class="text-xs text-red-500">{{ error }}
@@ -558,67 +569,67 @@ const getDateRetourMinDate = (date_min: any) => {
 
                 <div class="p-3 flex">
                     <div class="w-1/2 flex items-center mx-3">
-                        <RadioOrCheckboxInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_homme"/>
-                        <RadioOrCheckboxInput v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_femme"/>
+                        <RadioOrCheckboxInput :key="1" v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_homme"/>
+                        <RadioOrCheckboxInput :key="2" v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_femme"/>
                     </div>
-                    <FormInput v-model="addOrEditFormData.date_mep" val="date mep"/>
+                    <FormInput :key="1" v-model="addOrEditFormData.date_mep" val="date mep"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.langue_principale" :data="user?.primary_language?.name"
+                    <FormInput :key="1" v-model="addOrEditFormData.langue_principale" :data="user?.primary_language?.name"
                                type="select"
                                val="principal language"/>
-                    <FormInput v-model="addOrEditFormData.date_entree_formation" :data="user?.date_entree_formation"
+                    <FormInput :key="2" v-model="addOrEditFormData.date_entree_formation" :data="user?.date_entree_formation"
                                val="date début formation"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.cin_number" :data="cinNumber" val="identity number CIN"/>
-                    <FormInput v-model="addOrEditFormData.passport_number" :data="passportNumber"
+                    <FormInput :key="1" v-model="addOrEditFormData.cin_number" :data="cinNumber" val="identity number CIN"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.passport_number" :data="passportNumber"
                                val="identity number Passport"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.carte_sejour_number" :data="carteSejourNumber"
+                    <FormInput :key="1" v-model="addOrEditFormData.carte_sejour_number" :data="carteSejourNumber"
                                val="identity number Carte sèjour"/>
-                    <FormInput v-model="addOrEditFormData.nationalite" :data="user?.nationality?.name" type="select"
+                    <FormInput :key="2" v-model="addOrEditFormData.nationalite" :data="user?.nationality?.name" type="select"
                                val="nationalities"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.date_naissance" :data="user?.date_naissance"
+                    <FormInput :key="1" v-model="addOrEditFormData.date_naissance" :data="user?.date_naissance"
                                val="date_naissance"/>
-                    <FormInput v-model="addOrEditFormData.sourcing_provider" :data="user?.sourcing_type?.name"
+                    <FormInput :key="2" v-model="addOrEditFormData.sourcing_provider" :data="user?.sourcing_type?.name"
                                :edit="edit"
                                type="select"
                                val="fournisseur"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.situation_familiale" :data="user?.family_situation?.name"
+                    <FormInput :key="1" v-model="addOrEditFormData.situation_familiale" :data="user?.family_situation?.name"
                                val="situation familiale" type="select"/>
-                    <FormInput v-model="addOrEditFormData.photo" :data="user?.photo" val="photo"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.photo" :data="user?.photo" val="photo"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.phone_1" :data="user?.phone_1" val="téléphone 1"/>
-                    <FormInput v-model="addOrEditFormData.nombre_enfants" :data="user?.nombre_enfants"
+                    <FormInput :key="1" v-model="addOrEditFormData.phone_1" :data="user?.phone_1" val="téléphone 1"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.nombre_enfants" :data="user?.nombre_enfants"
                                val="nombre enfants"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.phone_2" :data="user?.phone_2" val="téléphone 2"/>
-                    <FormInput v-model="addOrEditFormData.cnss_number" :data="user?.cnss_number" val="Numéro CNSS"/>
+                    <FormInput :key="1" v-model="addOrEditFormData.phone_2" :data="user?.phone_2" val="téléphone 2"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.cnss_number" :data="user?.cnss_number" val="Numéro CNSS"/>
                 </div>
 
                 <div v-if="edit" class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.solde_cp" :data="Number(user?.solde_cp)" val="solde_cp"/>
-                    <FormInput v-model="addOrEditFormData.solde_rjf" :data="Number(user?.solde_rjf)" val="solde_rjf"/>
+                    <FormInput :key="1" v-model="addOrEditFormData.solde_cp" :data="Number(user?.solde_cp)" val="solde_cp"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.solde_rjf" :data="Number(user?.solde_rjf)" val="solde_rjf"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput v-model="addOrEditFormData.comment" :data="user?.comment?.comment" val="comment"/>
-                    <FormInput v-model="addOrEditFormData.address" :data="user?.address" val="address"/>
+                    <FormInput :key="1" v-model="addOrEditFormData.comment" :data="user?.comment?.comment" val="comment"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.address" :data="user?.address" val="address"/>
                 </div>
 
             </div>
@@ -638,7 +649,6 @@ const getDateRetourMinDate = (date_min: any) => {
 .modal-mask {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
     display: grid;
     place-items: center;
 }

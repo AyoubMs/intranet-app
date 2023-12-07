@@ -4,6 +4,7 @@ import {useLanguagesStore} from "~/stores/LanguagesStore.js";
 import {useProfilesStore} from "~/stores/ProfilesStore.js";
 import {useUserStore} from "~/stores/UserStore.js";
 import {useAuth} from "~/composables/useAuth.js";
+import {useDemandeCongeInputStore} from "~/stores/DemandeCongeInputStore.js";
 
 const props = defineProps({
     val: String,
@@ -23,6 +24,10 @@ const inputStore = useSoldeInputStore()
 const languageStore = useLanguagesStore()
 const profileStore = useProfilesStore()
 const userStore = useUserStore()
+const demandeCongeStore = useDemandeCongeInputStore()
+const demandeCongeForm = ref({
+    matricule: userStore.user?.matricule
+})
 const {setUser} = useAuth()
 const emits = defineEmits(['update:modelValue'])
 
@@ -50,11 +55,32 @@ onMounted(async () => {
         await userStore.fetchUser($apiFetch, setUser).then(() => {
             emits('update:modelValue', Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf))
         }).catch(err => console.log(err))
+    } else if (props.val?.includes('date_debut')) {
+        await demandeCongeStore.getLatestDemand($apiFetch, demandeCongeForm.value).catch(err => console.log(err))
+        let date = new Date(demandeCongeStore.latestDemand?.date_retour)
+        const today = new Date()
+        if (date.getTime() > today.getTime()) {
+            date.setDate(date.getDate() + 1)
+            props.min = date.toISOString().split('T')[0]
+        } else {
+            today.setDate(today.getDate() + 1)
+            props.min = date.toISOString().split('T')[0]
+        }
+    } else if (props.val?.includes('type de congé')) {
+        await demandeCongeStore.getAllTypesConge($apiFetch).catch(err => console.log(err))
     }
     if (props.data || props.edit) {
         emits('update:modelValue', props.data)
     }
 })
+
+watch(userStore, async () => {
+    if (props.val?.includes('solde total') && !props.val.includes('matricule')) {
+        await userStore.fetchUser($apiFetch, setUser).then(() => {
+            emits('update:modelValue', Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf))
+        }).catch(err => console.log(err))
+    }
+}, {deep: true})
 
 const getItems = (type) => {
     if (type?.includes('identity')) {
@@ -76,6 +102,8 @@ const getItems = (type) => {
         return inputStore.operations;
     } else if (type?.includes('type départ')) {
         return inputStore.motifs;
+    } else if (type?.includes('type de congé')) {
+        return demandeCongeStore.typesConge.map((item) => item.name)
     }
 }
 
@@ -84,7 +112,7 @@ const getItemOption = (item) => {
 }
 
 const getType = (val) => {
-    if (val?.includes('nombre enfants') || val?.includes('Numéro CNSS') || val?.includes('téléphone') || val?.includes('matricule')) {
+    if (val?.includes('nombre enfants') || val?.includes('Numéro CNSS') || val?.includes('téléphone') || val?.includes('matricule') || val?.includes('nombre jours')) {
         return 'number';
     } else if (val?.includes('date')) {
         return 'date';

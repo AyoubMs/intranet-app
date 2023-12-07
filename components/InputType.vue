@@ -44,9 +44,9 @@ onMounted(async () => {
     await userStore.fetchUser($apiFetch, setUser).then(() => {
         fillMatriculeIfAgent(condition);
     })
-    if (condition) {
-        demandesCongesInputStore.matricule = userStore.user?.matricule
-    }
+    // if (condition) {
+    //     demandesCongesInputStore.matricule = userStore.user?.matricule
+    // }
     switch (props.val) {
         case 'team':
             await teamStore.fetchTeams($apiFetch, soldeInputStore.status, '', props.affectation).catch(err => console.log(err))
