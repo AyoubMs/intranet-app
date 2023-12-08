@@ -106,7 +106,6 @@ onMounted(async () => {
       <div class="flex bg-gray-100 mr-3 p-3">
         <ButtonWithIcon
                         classes="mr-auto bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 active:bg-cyan-900 focus:ring-cyan-500"
-                        :disabled="(Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf) === 0)"
                         @click.prevent="newDemand()">
           <i class="fa-solid fa-paper-plane mr-3"></i>
           Nouvelle Demande

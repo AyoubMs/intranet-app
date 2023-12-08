@@ -9,6 +9,8 @@ import {useLanguagesStore} from "~/stores/LanguagesStore";
 import {useProfilesStore} from "~/stores/ProfilesStore";
 import {useAuth} from "~/composables/useAuth";
 import {useDemandeCongeInputStore} from "~/stores/DemandeCongeInputStore";
+import {SymbolKind} from "vscode-languageserver-types";
+import Number = SymbolKind.Number;
 
 const props = defineProps({
     accept: Boolean,
@@ -96,6 +98,8 @@ const refreshDemandeCongeForm = () => {
     demandeCongeForm.value.date_retour = null
     demandeCongeForm.value.date_debut = null
     demandeCongeForm.value.date_fin = null
+    demandeCongeForm.value.nombre_jours = null
+    demandeCongeForm.value.type_conge = null
 }
 
 let cinNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'CIN')[0]?.identity_number)
@@ -276,10 +280,12 @@ const sendDemandeCongeFormDataToTheBackend = async () => {
     }).catch(err => console.log(err))
 }
 
+let nbrJrsDemandesConfirmed = ref(null)
+
 const sendAcceptationDataToBackend = async () => {
     // console.log(props.demandeCongeData)
     inputStore.beginSendingUserData()
-    await demandeCongeInputStore.acceptDemand($apiFetch, props.demandeCongeData).then(async () => {
+    await demandeCongeInputStore.acceptDemand($apiFetch, {...props.demandeCongeData, nombre_jours_confirmed: nbrJrsDemandesConfirmed.value}).then(async () => {
         inputStore.finishSendingUserData();
         closeModal();
         await refreshDemandsTable()
@@ -364,18 +370,19 @@ onMounted(async () => {
             demandeCongeForm.value.matricule = userStore.user?.matricule;
         }
     }).catch(err => console.log(err))
+    console.log(props.demandeCongeData)
 })
 
-watch(demandeCongeForm, () => {
-    console.log(demandeCongeForm.value)
-}, {deep: true})
+// watch(demandeCongeForm, () => {
+//     console.log(demandeCongeForm.value)
+// }, {deep: true})
 
 const getValidationState = () => {
     if (props.affectation || props.edit || deactivationFormData.value?.date_depart) {
         return false
     }
     if (props.accept) {
-        return !props.accept
+        return !props.accept || !nbrJrsDemandesConfirmed.value
     } else if (props.reject) {
         return !props.reject
     } else if (props.cancel) {
@@ -388,7 +395,7 @@ const getValidationState = () => {
     }
 }
 
-const getMinDate = (date_retour: any|null|undefined = undefined, date_debut: any = false) => {
+const getMinDate = (date_retour: any | null | undefined = undefined, date_debut: any = false) => {
     let date = new Date(date_retour)
     if (date_retour && date_debut) {
         return date.toISOString().split('T')[0]
@@ -427,11 +434,53 @@ const isHR = userStore.user?.role?.name?.toLowerCase().includes('rh') || userSto
 const isOpsManager = userStore.user?.role?.name?.toLowerCase().includes('opération');
 const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || userStore.user?.role?.name?.toLowerCase()?.includes('cps') || userStore.user?.role?.name?.toLowerCase().includes('vigie') || userStore.user?.role?.name?.toLowerCase().includes('correction')
 
+watch(demandeCongeForm, () => {
+    let dateDebut, dateFin, dateRetour;
+    if (demandeCongeForm.value.date_debut) {
+        dateDebut = new Date(demandeCongeForm.value.date_debut)
+    }
+    if (demandeCongeForm.value.date_fin) {
+        dateFin = new Date(demandeCongeForm.value.date_fin)
+    }
+    if (demandeCongeForm.value.date_retour) {
+        dateRetour = new Date(demandeCongeForm.value.date_retour)
+    }
+    if (dateFin && dateDebut && dateDebut.getDate() > dateFin.getDate()) {
+        demandeCongeForm.value.date_fin = null
+    }
+    if (dateRetour && dateDebut && dateDebut.getDate() > dateRetour.getDate()) {
+        demandeCongeForm.value.date_retour = null
+    }
+    console.log(demandeCongeForm.value)
+}, {deep: true})
+
+const getState = (demand) => {
+    const isRejected = demand?.demand?.etat_demande?.toLowerCase()?.includes('rejected')
+    const isClosed = demand?.demand?.etat_demande?.toLowerCase()?.includes('closed')
+    if (isRejected || isClosed) {
+        return ""
+    }
+    return "(en cours)"
+}
+
+watch(nbrJrsDemandesConfirmed, () => {
+    let soldeTotal = parseInt(props.demandeCongeData?.user?.solde_cp) + parseInt(props.demandeCongeData?.user?.solde_rjf)
+    if (props.demandeCongeData?.type_demande?.name === 'conge paye') {
+        if (parseInt(nbrJrsDemandesConfirmed.value) > soldeTotal || parseInt(nbrJrsDemandesConfirmed.value) < 0) {
+            nbrJrsDemandesConfirmed.value = null
+        }
+    }
+}, {deep: true})
+
+const getSoldeTotal = (demand) => {
+    return parseInt(demand?.user?.solde_cp) + parseInt(demand?.user?.solde_rjf)
+}
 
 </script>
 
 <template>
-    <div v-if="show" class="modal-mask overflow-y-auto bg-black/[.6]" :class="[{'!bg-black/[.3]': (accept || reject || cancel) && !isSupervisor && !isHR && !isOpsManager}, {'!bg-black/[.1]': (accept || reject || cancel) && isOpsManager}, {'opacity-60': (isHR) && !edit && !affectation}, {'opacity-50': isSupervisor && !edit && !affectation}]">
+    <div v-if="show" class="modal-mask overflow-y-auto bg-black/[.6]"
+         :class="[{'!bg-black/[.3]': (accept || reject || cancel) && !isSupervisor && !isHR && !isOpsManager}, {'!bg-black/[.1]': (accept || reject || cancel) && isOpsManager}]">
         <div class="modal-container">
             <header class="text-white bg-blue-700 p-3">
                 <div class="flex items-center">
@@ -442,9 +491,12 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                 </div>
             </header>
 
-            <div v-if="accept" class="text-center font-bold text-xl">Vous êtes sure d'accepter la demande de congés?</div>
-            <div v-if="reject" class="text-center font-bold text-xl">Vous êtes sure de refuser la demande de congés?</div>
-            <div v-if="cancel" class="text-center font-bold text-xl">Vous êtes sure d'annuler la demande de congés?</div>
+            <div v-if="accept" class="text-center font-bold text-xl mt-3">Vous êtes sure d'accepter la demande de congés?
+            </div>
+            <div v-if="reject" class="text-center font-bold text-xl">Vous êtes sure de refuser la demande de congés?
+            </div>
+            <div v-if="cancel" class="text-center font-bold text-xl">Vous êtes sure d'annuler la demande de congés?
+            </div>
 
             <div v-if="inputStore.sendingUser">Loading...</div>
             <div v-if="demandeConge && !inputStore.sendingUser && !accept && !reject && !cancel">
@@ -452,19 +504,39 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                     <FormInput :key="1" val="matricule" :disabled="!userStore.user?.role?.name?.includes('Opérations')"
                                v-model="demandeCongeForm.matricule" :data="userStore.user?.matricule"/>
                     <FormInput :key="2" val="solde total" :disabled="true" v-model="demandeCongeForm.solde"/>
-                    <FormInput :key="3" val="date_retour" :min="getDateRetourMinDate(demandeCongeForm.date_fin)"
-                               :max="getMaxDate()"
-                               :disabled="demandeCongeForm.date_debut === null || demandeCongeForm.date_fin === null"
+                    <FormInput :key="3" val="date_retour" :disabled="!demandeCongeForm.date_fin"
+                               :min="getDateRetourMinDate(demandeCongeForm.date_fin)"
                                v-model="demandeCongeForm.date_retour"/>
                 </div>
                 <div class="px-3 my-3 flex">
-                    <FormInput :key="1" val="date_debut" :disabled="demandeCongeForm.solde === 0" :min="getMinDate()"
+                    <FormInput :key="1" val="date_debut"
                                v-model="demandeCongeForm.date_debut"/>
-                    <FormInput :key="2" val="date_fin" :disabled="demandeCongeForm.solde === 0 || demandeCongeForm.date_debut === null"
-                               :min="getMinDate(demandeCongeForm.date_debut, true)" :max="getMaxDate()"
+                    <FormInput :key="2" val="date_fin" :disabled="!demandeCongeForm.date_debut"
+                               :min="demandeCongeForm.date_debut"
                                v-model="demandeCongeForm.date_fin"/>
-                    <FormInput :key="3" v-model="demandeCongeForm.nombre_jours" val="nombre jours" />
-                    <FormInput val="type de congé" v-model="demandeCongeForm.type_conge" type="select" />
+                    <FormInput :key="3" v-model="demandeCongeForm.nombre_jours" val="nombre jours"/>
+                    <FormInput val="type de congé" v-model="demandeCongeForm.type_conge" type="select"/>
+                </div>
+            </div>
+            <div v-if="accept && !inputStore.sendingUser" class="flex px-3 mx-3 mt-12">
+                <FormInput :model-value="props.demandeCongeData?.nombre_jours" :disabled="true"
+                           val="nombre jours demandés"/>
+                <FormInput v-model="nbrJrsDemandesConfirmed" val="confirmer nombre jours demandés"/>
+                <FormInput val="date_debut"
+                           :model-value="props.demandeCongeData?.date_debut" :min="props.demandeCongeData?.date_debut"
+                           :max="props.demandeCongeData?.date_debut" :disabled="false"/>
+                <FormInput val="date_fin"
+                           :model-value="props.demandeCongeData?.date_fin" :min="props.demandeCongeData?.date_fin"
+                           :max="props.demandeCongeData?.date_fin"/>
+            </div>
+            <div v-if="accept && !inputStore.sendingUser" class="flex px-3 mx-3 my-3 mb-12">
+                <FormInput :model-value="getSoldeTotal(props.demandeCongeData).toString()" :disabled="true"
+                           val="solde total"/>
+                <FormInput val="type de congé" :model-value="props.demandeCongeData?.type_demande?.name"
+                           :disabled="true" type="select"/>
+                <div class="font-bold mx-auto flex flex-col w-1/3">
+                    <div class="text-xs">Etat Demande</div>
+                    <div class="my-auto">{{ props.demandeCongeData?.demand?.etat_demande }} {{ getState(props.demandeCongeData) }}</div>
                 </div>
             </div>
             <div v-if="increaseSolde && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel">
@@ -474,7 +546,8 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                     </div>
                 </FormInput>
             </div>
-            <div v-if="deactivation && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel" class="text-left flex flex-col">
+            <div v-if="deactivation && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel"
+                 class="text-left flex flex-col">
                 <div class="p-6">
                     <FormInput :key="1" :disabled="true" :deactivation="deactivation" :data="user?.matricule"
                                v-model="deactivationFormData.matricule" val="matricule"/>
@@ -495,7 +568,8 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                                :data="user?.comment?.leave_comment" val="comment"/>
                 </div>
             </div>
-            <div v-if="affectation && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel" class="text-left">
+            <div v-if="affectation && !inputStore.sendingUser && !demandeConge && !accept && !reject && !cancel"
+                 class="text-left">
                 <div class="p-3 flex">
                     <FormInput :key="1" :disabled="true" :data="user?.matricule" v-model="affectationFormData.matricule"
                                val="matricule"/>
@@ -506,7 +580,8 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                 <div class="p-3 flex">
                     <FormInput :key="1" :disabled="true" :data="user?.first_name + ' ' + user?.last_name"
                                v-model="affectationFormData.name" val="name"/>
-                    <InputType :key="2" :user="user" :affectation="affectation" val="team" :modal="true" type="text" title="Team"/>
+                    <InputType :key="2" :user="user" :affectation="affectation" val="team" :modal="true" type="text"
+                               title="Team"/>
                 </div>
                 <div class="p-3 flex">
                     <FormInput :key="1" type="date" v-model="affectationFormData.date_entree_formation"
@@ -515,8 +590,9 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                                :data="user?.operation?.name" val="operation principale"/>
                 </div>
             </div>
-            <div v-if="!accept && !reject && !cancel && !increaseSolde && !inputStore.sendingUser && !affectation && !deactivation && !demandeConge"
-                 class="text-left">
+            <div
+                v-if="!accept && !reject && !cancel && !increaseSolde && !inputStore.sendingUser && !affectation && !deactivation && !demandeConge"
+                class="text-left">
                 <div class="p-3 flex">
                     <FormInput :key="1" :disabled="addOrEditFormData.edit_matricule && edit"
                                v-model="addOrEditFormData.matricule"
@@ -534,7 +610,8 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                             {{ error }}
                         </div>
                     </FormInput>
-                    <FormInput :key="2" :disabled="addOrEditFormData.edit_email && edit" v-model="addOrEditFormData.email_1"
+                    <FormInput :key="2" :disabled="addOrEditFormData.edit_email && edit"
+                               v-model="addOrEditFormData.email_1"
                                :data="user?.email_1" val="e-mail">
                         <div v-if="edit">changer email <input type="checkbox" :value="!addOrEditFormData.edit_email"
                                                               :checked="!addOrEditFormData.edit_email"
@@ -569,22 +646,27 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
 
                 <div class="p-3 flex">
                     <div class="w-1/2 flex items-center mx-3">
-                        <RadioOrCheckboxInput :key="1" v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_homme"/>
-                        <RadioOrCheckboxInput :key="2" v-model="addOrEditFormData.sexe" :data="user?.Sexe" val="sexe_femme"/>
+                        <RadioOrCheckboxInput :key="1" v-model="addOrEditFormData.sexe" :data="user?.Sexe"
+                                              val="sexe_homme"/>
+                        <RadioOrCheckboxInput :key="2" v-model="addOrEditFormData.sexe" :data="user?.Sexe"
+                                              val="sexe_femme"/>
                     </div>
                     <FormInput :key="1" v-model="addOrEditFormData.date_mep" val="date mep"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput :key="1" v-model="addOrEditFormData.langue_principale" :data="user?.primary_language?.name"
+                    <FormInput :key="1" v-model="addOrEditFormData.langue_principale"
+                               :data="user?.primary_language?.name"
                                type="select"
                                val="principal language"/>
-                    <FormInput :key="2" v-model="addOrEditFormData.date_entree_formation" :data="user?.date_entree_formation"
+                    <FormInput :key="2" v-model="addOrEditFormData.date_entree_formation"
+                               :data="user?.date_entree_formation"
                                val="date début formation"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput :key="1" v-model="addOrEditFormData.cin_number" :data="cinNumber" val="identity number CIN"/>
+                    <FormInput :key="1" v-model="addOrEditFormData.cin_number" :data="cinNumber"
+                               val="identity number CIN"/>
                     <FormInput :key="2" v-model="addOrEditFormData.passport_number" :data="passportNumber"
                                val="identity number Passport"/>
                 </div>
@@ -592,7 +674,8 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                 <div class="p-3 flex">
                     <FormInput :key="1" v-model="addOrEditFormData.carte_sejour_number" :data="carteSejourNumber"
                                val="identity number Carte sèjour"/>
-                    <FormInput :key="2" v-model="addOrEditFormData.nationalite" :data="user?.nationality?.name" type="select"
+                    <FormInput :key="2" v-model="addOrEditFormData.nationalite" :data="user?.nationality?.name"
+                               type="select"
                                val="nationalities"/>
                 </div>
 
@@ -606,7 +689,8 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput :key="1" v-model="addOrEditFormData.situation_familiale" :data="user?.family_situation?.name"
+                    <FormInput :key="1" v-model="addOrEditFormData.situation_familiale"
+                               :data="user?.family_situation?.name"
                                val="situation familiale" type="select"/>
                     <FormInput :key="2" v-model="addOrEditFormData.photo" :data="user?.photo" val="photo"/>
                 </div>
@@ -619,16 +703,20 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
 
                 <div class="p-3 flex">
                     <FormInput :key="1" v-model="addOrEditFormData.phone_2" :data="user?.phone_2" val="téléphone 2"/>
-                    <FormInput :key="2" v-model="addOrEditFormData.cnss_number" :data="user?.cnss_number" val="Numéro CNSS"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.cnss_number" :data="user?.cnss_number"
+                               val="Numéro CNSS"/>
                 </div>
 
                 <div v-if="edit" class="p-3 flex">
-                    <FormInput :key="1" v-model="addOrEditFormData.solde_cp" :data="Number(user?.solde_cp)" val="solde_cp"/>
-                    <FormInput :key="2" v-model="addOrEditFormData.solde_rjf" :data="Number(user?.solde_rjf)" val="solde_rjf"/>
+                    <FormInput :key="1" v-model="addOrEditFormData.solde_cp" :data="Number(user?.solde_cp)"
+                               val="solde_cp"/>
+                    <FormInput :key="2" v-model="addOrEditFormData.solde_rjf" :data="Number(user?.solde_rjf)"
+                               val="solde_rjf"/>
                 </div>
 
                 <div class="p-3 flex">
-                    <FormInput :key="1" v-model="addOrEditFormData.comment" :data="user?.comment?.comment" val="comment"/>
+                    <FormInput :key="1" v-model="addOrEditFormData.comment" :data="user?.comment?.comment"
+                               val="comment"/>
                     <FormInput :key="2" v-model="addOrEditFormData.address" :data="user?.address" val="address"/>
                 </div>
 
@@ -637,8 +725,10 @@ const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || u
             <footer class="flex mx-6 my-3 bg-gray-200 p-3" v-if="!inputStore.sendingUser">
                 <button class="mr-auto text-black bg-gray-100 p-2 rounded-md" @click.prevent="closeModal()">Cancel
                 </button>
-                <button class="bg-cyan-500 text-white p-2 rounded-md" :class="[{'!bg-gray-500': getValidationState()}, {'!bg-red-500': reject}]"
-                        @click.prevent="sendDataToBackend()" :disabled="getValidationState()">{{ reject ? 'Rejeter' : 'Valider' }}
+                <button class="bg-cyan-500 text-white p-2 rounded-md"
+                        :class="[{'!bg-gray-500': getValidationState()}, {'!bg-red-500': reject}]"
+                        @click.prevent="sendDataToBackend()" :disabled="getValidationState()">
+                    {{ reject ? 'Rejeter' : 'Valider' }}
                 </button>
             </footer>
         </div>

@@ -31,6 +31,8 @@ const demandeCongeForm = ref({
 const {setUser} = useAuth()
 const emits = defineEmits(['update:modelValue'])
 
+let minDateDebut = ref(null)
+
 onMounted(async () => {
     if (props.val?.includes('type départ')) {
         await inputStore.fetchMotifs($apiFetch)
@@ -57,15 +59,18 @@ onMounted(async () => {
         }).catch(err => console.log(err))
     } else if (props.val?.includes('date_debut')) {
         await demandeCongeStore.getLatestDemand($apiFetch, demandeCongeForm.value).catch(err => console.log(err))
-        let date = new Date(demandeCongeStore.latestDemand?.date_retour)
-        const today = new Date()
-        if (date.getTime() > today.getTime()) {
-            date.setDate(date.getDate() + 1)
-            props.min = date.toISOString().split('T')[0]
-        } else {
-            today.setDate(today.getDate() + 1)
-            props.min = date.toISOString().split('T')[0]
+        if (demandeCongeStore.latestDemand !== "") {
+            let date = new Date(demandeCongeStore.latestDemand?.date_retour)
+            const today = new Date()
+            if (date.getTime() > today.getTime()) {
+                date.setDate(date.getDate() + 1)
+                minDateDebut.value = date.toISOString().split('T')[0]
+            } else {
+                today.setDate(today.getDate() + 1)
+                minDateDebut.value = date.toISOString().split('T')[0]
+            }
         }
+        console.log(demandeCongeStore.latestDemand)
     } else if (props.val?.includes('type de congé')) {
         await demandeCongeStore.getAllTypesConge($apiFetch).catch(err => console.log(err))
     }
@@ -135,6 +140,32 @@ const onChangeFile = async (event) => {
     await inputStore.sendInjectionSoldeFile($apiFetch, fd)
 }
 
+const checkForSoldeAndTypeConge = (item) => {
+    const isNoSolde = (Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf)) === 0
+    if (item === 'conge paye' && isNoSolde) {
+        return isNoSolde
+    }
+}
+
+watch(props.modelValue, () => {
+
+}, { deep: true })
+
+const getMinValue = () => {
+    if (props.val.includes('date_debut') && props.disabled === undefined) {
+        return minDateDebut.value
+    }
+    return props.min
+}
+
+const getDisabledState = () => {
+    if (props.val.includes('date_debut') && props.disabled === undefined) {
+        // props.disabled for date debut is only defined in the accept modal
+        return !minDateDebut.value
+    }
+    return props.disabled
+}
+
 </script>
 
 <template>
@@ -152,19 +183,19 @@ const onChangeFile = async (event) => {
             :type="getType(val)"
             :name="val"
             :id="val"
-            :min="min"
+            :min="getMinValue()"
             :max="max"
             :value="modelValue"
-            :disabled="disabled === undefined ? false : disabled"
+            :disabled="disabled === undefined ? false : getDisabledState()"
             @input="(event) => onInput(event)"
             required
         />
         <textarea v-if="val?.includes('address') || val?.includes('comment')"
                   class="w-full border border-black p-1 rounded-md"
                   @input="$emit('update:modelValue', $event.target.value)" :value="modelValue"></textarea>
-        <select class="border w-full p-2 border-black rounded-md" v-if="type === 'select'" :value="modelValue"
+        <select :disabled="props.disabled" class="border w-full p-2 border-black rounded-md" v-if="type === 'select'" :value="modelValue"
                 @change="$emit('update:modelValue', $event.target.value)">
-            <option v-for="item in getItems(val)">{{ getItemOption(item) }}</option>
+            <option v-for="item in getItems(val)" :disabled="checkForSoldeAndTypeConge(item)">{{ getItemOption(item) }}</option>
         </select>
     </div>
 </template>
