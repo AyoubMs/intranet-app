@@ -13,6 +13,7 @@ const props = defineProps({
     data: String | Number,
     edit: Boolean,
     deactivation: Boolean,
+    nombre_jours: String | Number,
     disabled: Boolean,
     min: Date,
     max: Date
@@ -55,22 +56,22 @@ onMounted(async () => {
         emits('update:modelValue', profileStore.profiles.filter(data => data?.includes('Conseiller'))[0])
     } else if (props.val?.includes('solde total')) {
         await userStore.fetchUser($apiFetch, setUser).then(() => {
-            emits('update:modelValue', Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf))
+            emits('update:modelValue', parseInt(userStore.user?.solde_cp) + parseInt(userStore.user?.solde_rjf))
         }).catch(err => console.log(err))
     } else if (props.val?.includes('date_debut')) {
-        await demandeCongeStore.getLatestDemand($apiFetch, demandeCongeForm.value).catch(err => console.log(err))
-        if (demandeCongeStore.latestDemand !== "") {
-            let date = new Date(demandeCongeStore.latestDemand?.date_retour)
-            const today = new Date()
-            if (date.getTime() > today.getTime()) {
-                date.setDate(date.getDate() + 1)
-                minDateDebut.value = date.toISOString().split('T')[0]
-            } else {
-                today.setDate(today.getDate() + 1)
-                minDateDebut.value = date.toISOString().split('T')[0]
-            }
-        }
-        console.log(demandeCongeStore.latestDemand)
+        // await demandeCongeStore.getLatestDemand($apiFetch, demandeCongeForm.value).catch(err => console.log(err))
+        // if (demandeCongeStore.latestDemand !== "") {
+        //     let date = new Date(demandeCongeStore.latestDemand?.date_retour)
+        //     const today = new Date()
+        //     if (date.getTime() > today.getTime()) {
+        //         date.setDate(date.getDate() + 1)
+        //         minDateDebut.value = date.toISOString().split('T')[0]
+        //     } else {
+        //         today.setDate(today.getDate() + 1)
+        //         minDateDebut.value = date.toISOString().split('T')[0]
+        //     }
+        // }
+        // console.log(demandeCongeStore.latestDemand)
     } else if (props.val?.includes('type de congé')) {
         await demandeCongeStore.getAllTypesConge($apiFetch).catch(err => console.log(err))
     }
@@ -82,7 +83,7 @@ onMounted(async () => {
 watch(userStore, async () => {
     if (props.val?.includes('solde total') && !props.val.includes('matricule')) {
         await userStore.fetchUser($apiFetch, setUser).then(() => {
-            emits('update:modelValue', Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf))
+            emits('update:modelValue', parseInt(userStore.user?.solde_cp) + parseInt(userStore.user?.solde_rjf))
         }).catch(err => console.log(err))
     }
 }, {deep: true})
@@ -141,15 +142,12 @@ const onChangeFile = async (event) => {
 }
 
 const checkForSoldeAndTypeConge = (item) => {
-    const isNoSolde = (Number(userStore.user?.solde_cp) + Number(userStore.user?.solde_rjf)) === 0
+    const totalSolde = parseInt(userStore.user?.solde_cp) + parseInt(userStore.user?.solde_rjf)
+    const isNoSolde = totalSolde === 0 || parseInt(props.nombre_jours) > totalSolde
     if (item === 'conge paye' && isNoSolde) {
         return isNoSolde
     }
 }
-
-watch(props.modelValue, () => {
-
-}, { deep: true })
 
 const getMinValue = () => {
     if (props.val.includes('date_debut') && props.disabled === undefined) {

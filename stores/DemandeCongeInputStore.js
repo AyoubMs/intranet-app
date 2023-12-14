@@ -22,6 +22,12 @@ export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
     },
 
     actions: {
+        async refreshDemandData(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: "POST",
+                body: {type: 'refresh_demand_data', data}
+            }).catch(err => console.log(err))
+        },
         async getAllTypesConge(fetchFunc) {
             await fetchFunc('/data', {
                 method: 'POST',
@@ -48,12 +54,70 @@ export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
                 userStore.assignUser(res)
             }).catch(err => console.log(err))
         },
-        async acceptDemand(fetchFunc, data) {
+        async acceptDemandOpsManager(fetchFunc, data) {
             await fetchFunc('/data', {
                 method: 'POST',
-                body: {type: 'accept_demand', data}
-            }).then((res) => {
-
+                body: {type: 'accept_demand_ops_manager', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandITResponsable(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_it_responsable', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandSupervisor(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_supervisor', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandVigie(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_vigie', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandCPS(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_cps', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandCCI(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_cci', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandCoordinatorVigie(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_coordinator_vigie', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandCoordinatorCPS(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_coordinator_cps', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandHeadOfOperationalExcellence(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_head_of_operational_excellence', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandRespRHOrChargeRHOrClose(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_responsable_rh_or_charge_rh_or_close', data}
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandDirector(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_director', data}
             }).catch(err => console.log(err))
         },
         async getAffectedDemands(fetchFunc, data) {

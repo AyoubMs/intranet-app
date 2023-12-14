@@ -114,8 +114,9 @@ let showProcessDemandsVariable = ref(false)
 
 const checkRoleName = () => {
   const roleName = userStore.user?.role?.name;
-  const isAgent = roleName?.toLowerCase().includes('conseiller') || roleName?.toLowerCase().includes('agent')
-  if (isAgent) {
+  const isAgent = roleName?.toLowerCase().includes('conseiller') || roleName?.toLowerCase().includes('agent');
+  const isITAgent = roleName?.toLowerCase().includes('informaticien') || roleName?.toLowerCase().includes('it support') || roleName?.toLowerCase().includes('stagiaire it')
+  if (isAgent || isITAgent) {
     return true
   }  else {
     return false

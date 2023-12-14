@@ -11,11 +11,12 @@ let operations = ref(null)
 let motifs = ref(null)
 let injectionErrors = ref([])
 let showModal = ref(false);
+let pageIndex = ref(1)
 
 export let useSoldeInputStore = defineStore('soldeInput', {
     state(){
         return {
-            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, operations, motifs, sendingUser: false, injectionErrors, checkFile: false, showModal
+            dateDebut, dateFin, status: 'active_users', loadingTable: false, loadingTeams: false, sexe: 'homme', identityTypes, sourcingTypes, sourcingProviders, nationalities, familySituations, operations, motifs, sendingUser: false, injectionErrors, checkFile: false, showModal, pageIndex
         }
     },
 
@@ -119,6 +120,12 @@ export let useSoldeInputStore = defineStore('soldeInput', {
         },
         refreshInjectionErrors() {
             this.injectionErrors = [];
+        },
+        refreshPageIndex() {
+            this.pageIndex = 1;
+        },
+        updatePageIndex(index) {
+            this.pageIndex = index;
         }
     }
 })

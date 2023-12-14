@@ -20,7 +20,7 @@ let reject = ref(false)
 let cancel = ref(false)
 let selectedDemand = ref(null)
 
-const openModal = async (state, demand) => {
+const openModal = (state, demand) => {
     selectedDemand.value = demand
     showModal.value = true;
     if (state === 'accept') {
@@ -58,6 +58,10 @@ function isChargeRHFunc(roleName) {
     return roleName?.toLowerCase()?.includes('chargé') && roleName?.toLowerCase()?.includes('rh')
 }
 
+function isITAgentFunc(roleName) {
+    return roleName?.toLowerCase()?.includes('informaticien') || roleName?.toLowerCase()?.includes('stagiaire it')
+}
+
 const showAcceptOrReject = (demand) => {
     const userId = userStore.user?.id;
     const roleName = userStore.user?.role?.name;
@@ -77,8 +81,10 @@ const showAcceptOrReject = (demand) => {
     const validatedByDirector = demand?.demand?.etat_demande === 'validated by director'
     const isChargeRH = roleName?.toLowerCase()?.includes('chargé rh')
     const isRespRH = roleName?.toLowerCase()?.includes('responsable rh')
+    const isRespIT = roleName?.toLowerCase()?.includes('responsable it');
+    const validatedByRespIT = demand?.demand?.etat_demande === 'validated by resp it'
     if (!demand) {
-        return isSupervisor || isOpsManager || isWfm
+        return isSupervisor || isOpsManager || isWfm || isRespIT || isChargeRH
     }
     if (isSupervisor && demand && demand?.user_id !== userId && !isSupervisorFunc(demand?.user?.role?.name)) {
         return created
@@ -90,10 +96,13 @@ const showAcceptOrReject = (demand) => {
         return (validatedBySupervisor && !isCoordinatorVigie && !isCoordinatorCPS) || (validatedByOpsManager && isSupervisorFunc(demand.user?.role?.name) && !isCoordinatorVigie && !isCoordinatorCPS) || (created && demand?.user_id !== userId && !isSupervisorFunc(demand?.user?.role?.name) && !isAgentFunc(demand?.user?.role?.name)) || (validatedByDirector && isSupervisorFunc(demand?.user?.role?.name))
     }
     if (isHR && demand && demand?.user_id !== userId) {
-        return (validatedByOpsManager && !isSupervisorFunc(demand?.user?.role?.name)) || (validatedByAgentWFM && isChargeRH && isSupervisorFunc(demand?.user?.role?.name)) || (validatedByCoordinatorWFM && isRespRH && isSupervisorFunc(demand?.user?.role?.name)) || (validatedByDirector && isWFMAgentFunc(demand?.user?.role?.name) && isRespRH) || (created && isCoordinatorWFM(demand?.user?.role?.name) && isRespRH) || (validatedByCoordinatorWFM && isChargeRH) || (created && isRespRH && isChargeRHFunc(demand?.user?.role?.name))
+        return (validatedByOpsManager && !isSupervisorFunc(demand?.user?.role?.name)) || (validatedByAgentWFM && isChargeRH && isSupervisorFunc(demand?.user?.role?.name)) || (validatedByCoordinatorWFM && isRespRH && isSupervisorFunc(demand?.user?.role?.name)) || (validatedByDirector && isWFMAgentFunc(demand?.user?.role?.name) && isRespRH) || (created && isCoordinatorWFM(demand?.user?.role?.name) && isRespRH) || (validatedByCoordinatorWFM && isChargeRH) || (created && isRespRH && isChargeRHFunc(demand?.user?.role?.name)) || (validatedByRespIT && isChargeRH)
     }
     if (isDirector && demand) {
         return created
+    }
+    if (isRespIT && demand) {
+        return (created && isITAgentFunc(demand?.user?.role?.name))
     }
 }
 
@@ -107,7 +116,8 @@ const getProfileConditionForCancel = (demand) => {
 const getState = (demand) => {
     const isRejected = demand?.demand?.etat_demande?.toLowerCase()?.includes('rejected')
     const isClosed = demand?.demand?.etat_demande?.toLowerCase()?.includes('closed')
-    if (isRejected || isClosed) {
+    const isCanceled = demand?.demand?.etat_demande?.toLowerCase()?.includes('canceled')
+    if (isRejected || isClosed || isCanceled) {
         return ""
     }
     return "(en cours)"
