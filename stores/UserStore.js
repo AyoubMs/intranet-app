@@ -6,16 +6,26 @@ let searchedUser = ref('')
 let addingUserErrors = ref([])
 let editingUserErrors = ref([])
 let deactivatingUserErrors = ref([])
+let updatingUserSoldes = ref(null)
+let updatedUserSoldes = ref(true)
 
 
 export let useUserStore = defineStore('user', {
     state() {
         return {
-            user, users, searchedUser, addingUserErrors, editingUserErrors, deactivatingUserErrors
+            user, users, searchedUser, addingUserErrors, editingUserErrors, deactivatingUserErrors, updatingUserSoldes, updatedUserSoldes
         }
     },
 
     actions: {
+        finishUpdatingUserSoldes() {
+            this.updatingUserSoldes = false;
+            this.updatedUserSoldes = true;
+        },
+        updateUserSoldes() {
+            this.updatingUserSoldes = true
+            this.updatedUserSoldes = false
+        },
         assignUser(user) {
             this.user = user
         },
@@ -77,13 +87,15 @@ export let useUserStore = defineStore('user', {
             }).catch(err => console.log(err))
         },
         async fetchUser(fetchFunc, func) {
-            await fetchFunc('/data', {
-                method: 'POST',
-                body: {type: 'user'}
-            }).then((data) => {
-                func(data);
-                this.user = JSON.parse(data);
-            }).catch((err) => console.log(err))
+            // if (!this.user) {
+                await fetchFunc('/data', {
+                    method: 'POST',
+                    body: {type: 'user'}
+                }).then((data) => {
+                    func(data);
+                    this.user = JSON.parse(data);
+                }).catch((err) => console.log(err))
+            // }
         },
         async fetchUsers(fetchFunc, status, data, page= 1) {
             await fetchFunc(`/data?page=${page}`, {

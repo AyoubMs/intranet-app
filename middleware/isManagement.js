@@ -8,7 +8,9 @@ export default defineNuxtRouteMiddleware((to, from) => {
 
     if (process.client) {
         const user = JSON.parse(getUser().name)
-        if (user.role?.name.includes('Conseiller') || user.role?.name.includes('FR') || user.role?.name.includes('NL')) {
+        const roleName = user.role?.name;
+        const isHR = roleName?.toLowerCase().includes('rh') || roleName?.toLowerCase()?.includes('humain');
+        if (!isHR) {
             window.location.pathname = '/dashboard'
         }
     }

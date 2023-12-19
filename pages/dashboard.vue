@@ -116,9 +116,16 @@ const checkRoleName = () => {
   const roleName = userStore.user?.role?.name;
   const isAgent = roleName?.toLowerCase().includes('conseiller') || roleName?.toLowerCase().includes('agent');
   const isITAgent = roleName?.toLowerCase().includes('informaticien') || roleName?.toLowerCase().includes('it support') || roleName?.toLowerCase().includes('stagiaire it')
-  if (isAgent || isITAgent) {
+  const isDeveloper = roleName?.toLowerCase().includes('dev')
+  const isCCI = roleName?.toLowerCase().includes('incoh')
+  const isRespMG = roleName?.toLowerCase().includes('responsable') && roleName?.toLowerCase().includes('moyens')
+  const isInfirmiereDeTravail = roleName?.toLowerCase().includes('infirm')
+  const isChargeDeMissionAupresDirection = roleName?.toLowerCase().includes('charg') && roleName?.toLowerCase().includes('direction')
+  const isChargeCommMktg = roleName?.toLowerCase().includes('charg') && roleName?.toLowerCase().includes('marketing')
+  const isChargeFormation = roleName?.toLowerCase().includes('charg') && roleName?.toLowerCase().includes('formation')
+  if (isAgent || isITAgent || isDeveloper || isCCI || isRespMG || isInfirmiereDeTravail || isChargeDeMissionAupresDirection || isChargeCommMktg || isChargeFormation) {
     return true
-  }  else {
+  } else {
     return false
   }
 }
@@ -126,7 +133,9 @@ const checkRoleName = () => {
 const {setUser} = useAuth()
 
 onMounted(async () => {
-  await userStore.fetchUser($apiFetch, setUser)
+  if (!userStore.user) {
+    await userStore.fetchUser($apiFetch, setUser)
+  }
   demandCards.forEach((async (demand) => {
     if (demand.title === 'Demandes non-traitées' && !checkRoleName() && userStore.user) {
       await demandeCongeInputStore.getAffectedDemands($apiFetch, userStore.user?.matricule).catch(err => console.log(err))
@@ -141,7 +150,6 @@ const getDemandCardQuantity = (demandCard: any) => {
 }
 
 const getDashboardElementQuantity = (dashboardElement: any) => {
-  console.log(userStore.user)
   if (dashboardElement['type'].includes('RJF')) {
     return userStore.user?.solde_rjf
   } else if (dashboardElement['type'].includes('CP')) {

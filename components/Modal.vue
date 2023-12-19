@@ -290,7 +290,9 @@ const sendAcceptationDataToBackend = async () => {
   };
 
   inputStore.beginSendingUserData();
-  if (isOpsManager) {
+  if (isCoordinatorQualiteFormation) {
+    await demandeCongeInputStore.acceptDemandCoordinatorQualiteFormation($apiFetch, dataObj).then().catch(err => console.log(err))
+  } else if (isOpsManager) {
     await demandeCongeInputStore.acceptDemandOpsManager($apiFetch, dataObj).then().catch(err => console.log(err))
   } else if (isRespIT) {
     await demandeCongeInputStore.acceptDemandITResponsable($apiFetch, dataObj).then().catch(err => console.log(err))
@@ -311,7 +313,11 @@ const sendAcceptationDataToBackend = async () => {
   } else if (isRespRH || isChargeRH) {
     await demandeCongeInputStore.acceptDemandRespRHOrChargeRHOrClose($apiFetch, dataObj).then().catch(err => console.log(err))
   } else if (isDirector) {
-    await demandeCongeInputStore.acceptDemandDirector($apiFetch, dataObj).then().catch(err => console.log(err))
+    if (props.demandeCongeData?.user?.role?.name.toLowerCase().includes('infir')) {
+      await demandeCongeInputStore.acceptDemandRespRHOrChargeRHOrClose($apiFetch, dataObj).then().catch(err => console.log(err))
+    } else {
+      await demandeCongeInputStore.acceptDemandDirector($apiFetch, dataObj).then().catch(err => console.log(err))
+    }
   }
   await demandeCongeInputStore.refreshDemandData($apiFetch, dataObj).then(async () => {
     inputStore.finishSendingUserData()
@@ -389,12 +395,14 @@ let increaseSoldeFormData = ref({
 const {setUser} = useAuth()
 
 onMounted(async () => {
-  await userStore.fetchUser($apiFetch, setUser).then(() => {
-    if (userStore.user?.role?.name?.includes('Conseiller') || userStore.user?.role?.name?.includes('FR') || userStore.user?.role?.name?.includes('NL')
-    ) {
-      demandeCongeForm.value.matricule = userStore.user?.matricule;
-    }
-  }).catch(err => console.log(err))
+  if (!userStore.user) {
+    await userStore.fetchUser($apiFetch, setUser).then(() => {
+      if (userStore.user?.role?.name?.includes('Conseiller') || userStore.user?.role?.name?.includes('FR') || userStore.user?.role?.name?.includes('NL')
+      ) {
+        demandeCongeForm.value.matricule = userStore.user?.matricule;
+      }
+    }).catch(err => console.log(err))
+  }
   console.log(props.demandeCongeData)
 })
 
@@ -407,7 +415,6 @@ const getValidationState = () => {
     return false
   }
   if (props.accept) {
-    console.log(props.demandeCongeData?.type_demande?.name)
     return !props.accept || !nbrJrsDemandesConfirmed.value || props.demandeCongeData?.type_demande?.name === null
   } else if (props.reject) {
     return !props.reject
@@ -469,6 +476,7 @@ const isHeadOfOperationalExcellence = userStore.user?.role?.name?.toLowerCase()?
 const isChargeRH = userStore.user?.role?.name?.toLowerCase()?.includes('chargé rh')
 const isRespRH = userStore.user?.role?.name?.toLowerCase()?.includes('responsable rh')
 const isDirector = userStore.user?.role?.name?.toLowerCase() === 'directeur'
+const isCoordinatorQualiteFormation = userStore.user?.role?.name?.toLowerCase().includes('coordinateur') && userStore.user?.role?.name?.toLowerCase().includes('qualit') && userStore.user?.role?.name?.toLowerCase().includes('formation')
 const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || userStore.user?.role?.name?.toLowerCase()?.includes('cps') || userStore.user?.role?.name?.toLowerCase().includes('vigie') || userStore.user?.role?.name?.toLowerCase().includes('correction')
 
 watch(demandeCongeForm, () => {

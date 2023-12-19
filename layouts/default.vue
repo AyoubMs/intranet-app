@@ -16,7 +16,7 @@ const {removeUser, setUser} = useAuth()
 const route = useRoute()
 
 onMounted(async () => {
-    if (route.path !== '/') {
+    if (route.path !== '/' && !userStore.user) {
         await user.fetchUser($apiFetch, setUser);
     }
 })

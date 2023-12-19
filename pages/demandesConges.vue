@@ -66,8 +66,9 @@ let loadedTable = ref(false)
 
 const {setUser} = useAuth()
 
-const newDemand = async () => {
+const newDemand = () => {
   showModal.value = true;
+  userStore.updateUserSoldes();
 }
 
 const closeModal = () => {
@@ -77,7 +78,9 @@ const closeModal = () => {
 let userStore = useUserStore()
 
 onMounted(async () => {
-  await userStore.fetchUser($apiFetch, setUser).catch(err => console.log(err))
+  if (!userStore.user) {
+    await userStore.fetchUser($apiFetch, setUser).catch(err => console.log(err))
+  }
   await searchBackend()
 })
 

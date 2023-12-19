@@ -1,5 +1,6 @@
 <script setup>
 import Modal from "~/components/Modal.vue";
+import {useUserStore} from "~/stores/UserStore.js";
 
 const props = defineProps({
   user: Object
@@ -8,9 +9,11 @@ const props = defineProps({
 let showModal = ref(false);
 let affectation = ref(false);
 let deactivation = ref(false);
+const userStore = useUserStore()
 
 const toggleModal = () => {
   showModal.value = true;
+  userStore.updateUserSoldes()
 }
 
 const toggleModalWithAffectation = () => {

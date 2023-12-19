@@ -54,6 +54,12 @@ export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
                 userStore.assignUser(res)
             }).catch(err => console.log(err))
         },
+        async acceptDemandCoordinatorQualiteFormation(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_coordinator_qualite_formation', data}
+            }).catch(err => console.log(err))
+        },
         async acceptDemandOpsManager(fetchFunc, data) {
             await fetchFunc('/data', {
                 method: 'POST',
