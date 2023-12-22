@@ -119,7 +119,7 @@ const navRoutes = ref({
             {
                 title: 'Suivi du solde (CP & RJF)',
                 icon: 'fa-solid fa-rotate-left',
-                link: '#'
+                link: '/suiviSolde'
             },
             {
                 title: 'Saisie/Suivi des demandes',

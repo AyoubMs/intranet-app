@@ -59,6 +59,7 @@ onMounted(async () => {
             teamStore.selectAffectationTeam(operation?.name);
           }
         })
+          console.log(item)
         item?.operations?.forEach((operation) => {
           const team = `${operation?.name} / ${item?.first_name} ${item?.last_name} / ${item?.team_type ? item?.team_type?.name : 'Customer Service'}`;
           console.log(teamStore.selectedAffectationTeams)

@@ -13,15 +13,24 @@ let affectedDemands = ref(null)
 let demandeConge = ref(null)
 let demands = ref([])
 let typesConge = ref([])
+let demandesCongeLogs = ref([])
 
 export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
     state() {
         return {
-            dateDemandeDebut, dateDemandeFin, dateDebutCongeDebut, dateDebutCongeFin, dateFinCongeDebut, dateFinCongeFin, matricule, demands, demandeConge, latestDemand, affectedDemands, typesConge
+            dateDemandeDebut, dateDemandeFin, dateDebutCongeDebut, dateDebutCongeFin, dateFinCongeDebut, dateFinCongeFin, matricule, demands, demandeConge, latestDemand, affectedDemands, typesConge, demandesCongeLogs
         }
     },
 
     actions: {
+        async getDemandesCongeLogs(fetchFunc) {
+            await fetchFunc('/data', {
+                method: "POST",
+                body: {type: 'get_demandes_conge_logs'}
+            }).then(data => {
+                this.demandesCongeLogs = data
+            }).catch(err => console.log(err))
+        },
         async refreshDemandData(fetchFunc, data) {
             await fetchFunc('/data', {
                 method: "POST",
@@ -52,6 +61,12 @@ export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
             }).then((res) => {
                 const userStore = useUserStore()
                 userStore.assignUser(res)
+            }).catch(err => console.log(err))
+        },
+        async acceptDemandResponsableQualiteFormation(fetchFunc, data) {
+            await fetchFunc('/data', {
+                method: 'POST',
+                body: {type: 'accept_demand_responsable_qualite_formation', data}
             }).catch(err => console.log(err))
         },
         async acceptDemandCoordinatorQualiteFormation(fetchFunc, data) {

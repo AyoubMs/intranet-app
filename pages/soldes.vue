@@ -20,6 +20,8 @@ definePageMeta({
 
 const {$apiFetch}: any = useNuxtApp()
 
+const createUser = ref(false)
+
 let userStore = useUserStore()
 
 let teamStore = useTeamStore()
@@ -103,6 +105,7 @@ let increaseSolde = ref(false);
 
 let newUser = () => {
     showModal.value = true;
+    createUser.value = true;
 }
 
 let increasingSolde = () => {
@@ -196,6 +199,6 @@ let closeModal = () => {
         </div>
     </div>
 
-    <Modal :show="showModal || increaseSolde" :increaseSolde="increaseSolde" @close="closeModal()"/>
+    <Modal :show="showModal || increaseSolde" :createUser="createUser" :increaseSolde="increaseSolde" @close="closeModal()"/>
 </template>
 
