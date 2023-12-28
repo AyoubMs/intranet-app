@@ -5,7 +5,7 @@ import InputType from "~/components/InputType.vue";
 import {definePageMeta, useAuth} from "#imports";
 import {useDemandeCongeInputStore} from "~/stores/DemandeCongeInputStore";
 import {useSoldeInputStore} from "~/stores/SoldeInputStore";
-import Pagination from "~/pages/Pagination.vue";
+import Pagination from "~/components/Pagination.vue";
 import FormInput from "~/components/FormInput.vue";
 import Modal from "~/components/Modal.vue";
 import {useTeamStore} from "~/stores/TeamStore";

@@ -11,6 +11,8 @@ import {useAuth} from "~/composables/useAuth";
 import {useDemandeCongeInputStore} from "~/stores/DemandeCongeInputStore";
 import {SymbolKind} from "vscode-languageserver-types";
 import Number = SymbolKind.Number;
+import {useRolesAndEtatDemandeUtilsStore} from "~/stores/RolesAndEtatDemandeStoreUtils";
+import {isSuper} from "@babel/types";
 
 const props = defineProps({
     accept: Boolean,
@@ -107,6 +109,97 @@ const refreshDemandeCongeForm = () => {
 let cinNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'CIN')[0]?.identity_number)
 let passportNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'Passeport')[0]?.identity_number)
 let carteSejourNumber: any = ref(props.user?.identity_types?.filter((data: any) => data?.name === 'Carte sejour')[0]?.identity_number);
+
+const isHR = userStore.user?.role?.name?.toLowerCase().includes('rh') || userStore.user?.role?.name?.toLowerCase()?.includes('humain')
+
+function isOpsManagerFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('opération')
+}
+
+const isOpsManager = userStore.user?.role?.name?.toLowerCase().includes('opération');
+
+function isCoordinatorVigieFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('coordinateur vigie')
+}
+
+const isCoordinatorVigie = userStore.user?.role?.name?.toLowerCase()?.includes('coordinateur vigie')
+
+function isCoordinatorCPSFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('coordinateur cps')
+}
+
+const isCoordinatorCPS = userStore.user?.role?.name?.toLowerCase()?.includes('coordinateur cps')
+
+function isRespITFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('responsable it')
+}
+
+const isRespIT = userStore.user?.role?.name?.toLowerCase()?.includes('responsable it');
+
+function isSupervisorFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('superviseur')
+}
+
+const isSupervisor = userStore?.user?.role?.name?.toLowerCase().includes('superviseur')
+
+function isVigieFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('vigie')
+}
+
+const isVigie = userStore.user?.role?.name?.toLowerCase().includes('vigie');
+
+function isCPSFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('statis')
+}
+
+const isCPS = userStore.user?.role?.name?.toLowerCase()?.includes('statis')
+
+function isCCIFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('incoh')
+}
+
+const isCCI = userStore.user?.role?.name?.toLowerCase().includes('incoh')
+
+function isHeadOfOperationalExcellenceFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('head of operational excellence')
+}
+
+const isHeadOfOperationalExcellence = userStore.user?.role?.name?.toLowerCase()?.includes('head of operational excellence')
+
+function isChargeRHFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('charg') && roleName?.toLowerCase()?.includes('rh')
+}
+
+const isChargeRH = userStore.user?.role?.name?.toLowerCase()?.includes('chargé rh')
+
+function isRespRHFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('responsable rh')
+}
+
+const isRespRH = userStore.user?.role?.name?.toLowerCase()?.includes('responsable rh')
+
+function isDirectorFunc(roleName: string) {
+    return roleName?.toLowerCase() === 'directeur'
+}
+
+const isDirector = userStore.user?.role?.name?.toLowerCase() === 'directeur'
+
+function isCoordinatorQualiteFormationFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('coordinateur') && roleName?.toLowerCase()?.includes('qualit') && roleName?.toLowerCase()?.includes('formation')
+}
+
+const isCoordinatorQualiteFormation = userStore.user?.role?.name?.toLowerCase().includes('coordinateur') && userStore.user?.role?.name?.toLowerCase().includes('qualit') && userStore.user?.role?.name?.toLowerCase().includes('formation')
+
+function isResponsableQualiteFormationFunc(roleName: string) {
+    return roleName?.toLowerCase()?.includes('responsable') && roleName?.toLowerCase()?.includes('qualit') && roleName?.toLowerCase()?.includes('formation')
+}
+
+const isResponsableQualiteFormation = userStore.user?.role?.name?.toLowerCase().includes('responsable') && userStore.user?.role?.name?.toLowerCase().includes('qualit') && userStore.user?.role?.name?.toLowerCase().includes('formation')
+const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || userStore.user?.role?.name?.toLowerCase()?.includes('cps') || userStore.user?.role?.name?.toLowerCase().includes('vigie') || userStore.user?.role?.name?.toLowerCase().includes('correction')
+
+function isAgentFunc(roleName: string) {
+    return roleName?.toLowerCase().includes('conseiller') || roleName?.toLowerCase().includes('agent')
+}
 
 watch(userStore.addingUserErrors, () => {
     console.log(userStore.addingUserErrors)
@@ -284,12 +377,493 @@ let nbrJrsDemandesConfirmed = ref(null)
 
 // const isSendingAcceptationData = ref(false)
 
+let rolesAndEtatDemandeStoreUtils = useRolesAndEtatDemandeUtilsStore();
+
+const agentScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 3,
+    scenario1: {
+        niveau1: {
+            role: 'Superviseur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isSupervisor && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Agent WFM',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedBySupervisor(demandeCongeDataFromProps) && (isVigie || isCPS) && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau3: {
+            role: 'Ops Manager',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByAgentWFM(demandeCongeDataFromProps) && isOpsManager && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau4: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByOpsManager(demandeCongeDataFromProps) && isChargeRH && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Superviseur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isSupervisor && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Agent WFM',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedBySupervisor(demandeCongeDataFromProps) && (isVigie || isCPS) && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau3: {
+            role: 'Ops Manager',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByAgentWFM(demandeCongeDataFromProps) && isOpsManager && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau4: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByOpsManager(demandeCongeDataFromProps) && isRespRH && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario3: {
+        niveau1: {
+            role: 'Agent WFM',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isVigie || isCPS) && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Ops Manager',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByAgentWFM(demandeCongeDataFromProps) && isOpsManager && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau3: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByOpsManager(demandeCongeDataFromProps) && isRespRH && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const supervisorScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Ops Manager',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isOpsManager && rolesAndEtatDemandeStoreUtils.isSupervisorFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Agent WFM',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByOpsManager(demandeCongeDataFromProps) && (isVigie || isCPS) && rolesAndEtatDemandeStoreUtils.isSupervisorFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau3: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByAgentWFM(demandeCongeDataFromProps) && isChargeRH && rolesAndEtatDemandeStoreUtils.isSupervisorFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isSupervisorFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Responsable WFM',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isCoordinatorCPS || isCoordinatorVigie) && rolesAndEtatDemandeStoreUtils.isSupervisorFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau3: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByCoordinatorWFM(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isSupervisorFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const opsManagerScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isOpsManagerFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isOpsManagerFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isOpsManagerFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const respRHScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isRespRHFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const respWFMScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && (rolesAndEtatDemandeStoreUtils.isCoordinatorCPSFunc(demandeCongeDataFromProps?.user?.role?.name) || rolesAndEtatDemandeStoreUtils.isCoordinatorVigieFunc(demandeCongeDataFromProps?.user?.role?.name))
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && (rolesAndEtatDemandeStoreUtils.isCoordinatorCPSFunc(demandeCongeDataFromProps?.user?.role?.name) || rolesAndEtatDemandeStoreUtils.isCoordinatorVigieFunc(demandeCongeDataFromProps?.user?.role?.name))
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && (rolesAndEtatDemandeStoreUtils.isCoordinatorCPSFunc(demandeCongeDataFromProps?.user?.role?.name) || rolesAndEtatDemandeStoreUtils.isCoordinatorVigieFunc(demandeCongeDataFromProps?.user?.role?.name))
+        },
+    },
+})
+
+const itSupportScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Resp IT',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isRespIT && rolesAndEtatDemandeStoreUtils.isITAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByRespIT(demandeCongeDataFromProps) && isChargeRH && rolesAndEtatDemandeStoreUtils.isITAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const respITScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isRespITFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isRespITFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isRespITFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const agentWFMScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Responsable WFM',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isCoordinatorVigie || isCoordinatorCPS && rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name) || rolesAndEtatDemandeStoreUtils.isVigieFunc(demandeCongeDataFromProps?.user?.role?.name))
+        },
+        niveau2: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByCoordinatorWFM(demandeCongeDataFromProps) && isCharge(RH && rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name) || rolesAndEtatDemandeStoreUtils.isVigieFunc(demandeCongeDataFromProps?.user?.role?.name))
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && (rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name) || rolesAndEtatDemandeStoreUtils.isVigieFunc(demandeCongeDataFromProps?.user?.role?.name))
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && (rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name) || rolesAndEtatDemandeStoreUtils.isVigieFunc(demandeCongeDataFromProps?.user?.role?.name))
+        },
+    }
+})
+
+const agentMoyensGenerauxScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isAgentFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const respMoyensGenerauxScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isRespMGFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isRespMGFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isRespMGFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const chargeFormationScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Coordinator Qualite Formation',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isCoordinatorQualiteFormation && rolesAndEtatDemandeStoreUtils.isChargeFormationFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByCoordinatorQualiteFormation(demandeCongeDataFromProps) && isChargeRH && rolesAndEtatDemandeStoreUtils.isChargeFormationFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Responsable Qualite Formation',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isResponsableQualiteFormation && rolesAndEtatDemandeStoreUtils.isChargeFormationFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByResponsableQualiteFormation(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isChargeFormationFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const coordinatorQualiteFormationScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isCoordinatorQualiteFormation(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isCoordinatorQualiteFormation(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const responsableQualiteFormationScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isResponsableQualiteFormationFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isResponsableQualiteFormationFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isResponsableQualiteFormationFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const chargeRHScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isChargeRHFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByRespRH(demandeCongeDataFromProps) && (isDirector) && rolesAndEtatDemandeStoreUtils.isChargeRHFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isDirector) && rolesAndEtatDemandeStoreUtils.isChargeRHFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const CPSScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Responsable WFM',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isCoordinatorCPS || isCoordinatorVigie) && rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByCoordinatorWFM(demandeCongeDataFromProps) && (isChargeRH) && rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && isRespRH && rolesAndEtatDemandeStoreUtils.isCPSFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const infirmiereTravailScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isInfirmiereDeTravailFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isInfirmiereDeTravailFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const chargeMissionAupresDirectionScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isChargeMissionAupresDirectionFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isChargeMissionAupresDirectionFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    }
+})
+
+const chargeQualiteProcessScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 2,
+    scenario1: {
+        niveau1: {
+            role: 'Coordinator Qualite Formation',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isCoordinatorQualiteFormation && rolesAndEtatDemandeStoreUtils.isChargeQualiteProcessFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByCoordinatorQualiteFormation(demandeCongeDataFromProps) && isChargeRH && rolesAndEtatDemandeStoreUtils.isChargeQualiteProcessFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+    scenario2: {
+        niveau1: {
+            role: 'Responsable Qualite Formation',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isResponsableQualiteFormation && rolesAndEtatDemandeStoreUtils.isChargeQualiteProcessFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByResponsableQualiteFormation(demandeCongeDataFromProps) && isRespRH && rolesAndEtatDemandeStoreUtils.isChargeQualiteProcessFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const dataProtectionOfficerScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isDataProtectionOfficerFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByRespRH(demandeCongeDataFromProps) && isRespRH && rolesAndEtatDemandeStoreUtils.isDataProtectionOfficerFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const chargeCommMarketingScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Directeur',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isDirector && rolesAndEtatDemandeStoreUtils.isChargeCommMarketingFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Charge RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByDirector(demandeCongeDataFromProps) && isChargeRH && rolesAndEtatDemandeStoreUtils.isChargeCommMarketingFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const chargeRecrutementScenarios = (demandeCongeDataFromProps: any) => ({
+    scenariosNbr: 1,
+    scenario1: {
+        niveau1: {
+            role: 'Responsable Qualite Formation',
+            condition: rolesAndEtatDemandeStoreUtils.isCreated(demandeCongeDataFromProps) && isResponsableQualiteFormation && rolesAndEtatDemandeStoreUtils.isChargeRecrutementFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+        niveau2: {
+            role: 'Resp RH',
+            condition: rolesAndEtatDemandeStoreUtils.isValidatedByResponsableQualiteFormation(demandeCongeDataFromProps) && (isRespRH) && rolesAndEtatDemandeStoreUtils.isChargeRecrutementFunc(demandeCongeDataFromProps?.user?.role?.name)
+        },
+    },
+})
+
+const scenarios = (demandeCongeDataFromProps: any) => ({
+    'agent': agentScenarios(demandeCongeDataFromProps),
+    'supervisor': supervisorScenarios(demandeCongeDataFromProps),
+    'Ops Manager': opsManagerScenarios(demandeCongeDataFromProps),
+    'Resp RH': respRHScenarios(demandeCongeDataFromProps),
+    'Resp wfm': respWFMScenarios(demandeCongeDataFromProps),
+    'IT Support': itSupportScenarios(demandeCongeDataFromProps),
+    'Resp IT': respITScenarios(demandeCongeDataFromProps),
+    'Agent WFM': agentWFMScenarios(demandeCongeDataFromProps),
+    'Agent Moyens Generaux': agentMoyensGenerauxScenarios(demandeCongeDataFromProps),
+    'Resp Moyens Generaux': respMoyensGenerauxScenarios(demandeCongeDataFromProps),
+    'Charge Formation': chargeFormationScenarios(demandeCongeDataFromProps),
+    'Coordinateur Qualite Formation': coordinatorQualiteFormationScenarios(demandeCongeDataFromProps),
+    'Responsable Qualite Formation': responsableQualiteFormationScenarios(demandeCongeDataFromProps),
+    'Charge RH': chargeRHScenarios(demandeCongeDataFromProps),
+    'Charge Planification et Statistiques': CPSScenarios(demandeCongeDataFromProps),
+    'Infirmiere Travail': infirmiereTravailScenarios(demandeCongeDataFromProps),
+    'Charge Mission Aupres Direction': chargeMissionAupresDirectionScenarios(demandeCongeDataFromProps),
+    'Charge Qualite Process': chargeQualiteProcessScenarios(demandeCongeDataFromProps),
+    'Data Protection Officer': dataProtectionOfficerScenarios(demandeCongeDataFromProps),
+    'Charge Communication Marketing': chargeCommMarketingScenarios(demandeCongeDataFromProps),
+    'Charge Recrutement': chargeRecrutementScenarios(demandeCongeDataFromProps)
+})
+
+function getSpecificLevelValidationCondition(level: any, demandeCongeDataFromProps: any) {
+    for (let profile in scenarios(demandeCongeDataFromProps)) {
+        for (let scenarioKey in scenarios(demandeCongeDataFromProps)[profile]) {
+            if (scenarios(demandeCongeDataFromProps)[profile][scenarioKey]?.niveau1?.condition && level === 1) {
+                return true;
+            } else if (scenarios(demandeCongeDataFromProps)[profile][scenarioKey]?.niveau2?.condition && level === 2) {
+                return true;
+            } else if (scenarios(demandeCongeDataFromProps)[profile][scenarioKey]?.niveau3?.condition && level === 3) {
+                return true;
+            } else if (scenarios(demandeCongeDataFromProps)[profile][scenarioKey]?.niveau4?.condition && level === 4) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function getDateValidationNumber(demandeCongeDataFromProps: any) {
+    if (getSpecificLevelValidationCondition(1, demandeCongeDataFromProps)) {
+        return 1;
+    } else if (getSpecificLevelValidationCondition(2, demandeCongeDataFromProps)) {
+        return 2;
+    } else if (getSpecificLevelValidationCondition(3, demandeCongeDataFromProps)) {
+        return 3;
+    } else if (getSpecificLevelValidationCondition(4, demandeCongeDataFromProps)) {
+        return 4;
+    }
+}
+
 const sendAcceptationDataToBackend = async () => {
     // console.log(props.demandeCongeData)
     let dataObj = {
         ...props.demandeCongeData,
+        date_validation: (new Date()).toISOString().split('T')[0],
+        date_validation_number: getDateValidationNumber(props.demandeCongeData) ?? 0,
         nombre_jours_confirmed: nbrJrsDemandesConfirmed.value
     };
+
+    // console.log(getDateValidationNumber(props.demandeCongeData))
 
     inputStore.beginSendingUserData();
     if (isResponsableQualiteFormation) {
@@ -468,23 +1042,6 @@ const getDateRetourMinDate = (date_min: any) => {
     return date.toISOString().split('T')[0]
 }
 
-const isHR = userStore.user?.role?.name?.toLowerCase().includes('rh') || userStore.user?.role?.name?.toLowerCase()?.includes('humain')
-const isOpsManager = userStore.user?.role?.name?.toLowerCase().includes('opération');
-const isCoordinatorVigie = userStore.user?.role?.name?.toLowerCase()?.includes('coordinateur vigie')
-const isCoordinatorCPS = userStore.user?.role?.name?.toLowerCase()?.includes('coordinateur cps')
-const isRespIT = userStore.user?.role?.name?.toLowerCase()?.includes('responsable it');
-const isSupervisor = userStore?.user?.role?.name?.toLowerCase().includes('superviseur')
-const isVigie = userStore.user?.role?.name?.toLowerCase().includes('vigie');
-const isCPS = userStore.user?.role?.name?.toLowerCase()?.includes('statis')
-const isCCI = userStore.user?.role?.name?.toLowerCase().includes('incoh')
-const isHeadOfOperationalExcellence = userStore.user?.role?.name?.toLowerCase()?.includes('head of operational excellence')
-const isChargeRH = userStore.user?.role?.name?.toLowerCase()?.includes('chargé rh')
-const isRespRH = userStore.user?.role?.name?.toLowerCase()?.includes('responsable rh')
-const isDirector = userStore.user?.role?.name?.toLowerCase() === 'directeur'
-const isCoordinatorQualiteFormation = userStore.user?.role?.name?.toLowerCase().includes('coordinateur') && userStore.user?.role?.name?.toLowerCase().includes('qualit') && userStore.user?.role?.name?.toLowerCase().includes('formation')
-const isResponsableQualiteFormation = userStore.user?.role?.name?.toLowerCase().includes('responsable') && userStore.user?.role?.name?.toLowerCase().includes('qualit') && userStore.user?.role?.name?.toLowerCase().includes('formation')
-const isWfm = userStore.user?.role?.name?.toLowerCase()?.includes('statis') || userStore.user?.role?.name?.toLowerCase()?.includes('cps') || userStore.user?.role?.name?.toLowerCase().includes('vigie') || userStore.user?.role?.name?.toLowerCase().includes('correction')
-
 watch(demandeCongeForm, () => {
     let dateDebut, dateFin, dateRetour;
     const soldeTotal = parseInt(userStore.user?.solde_cp) + parseInt(userStore.user?.solde_rjf)
@@ -527,9 +1084,7 @@ watch(nbrJrsDemandesConfirmed, () => {
     }
 }, {deep: true})
 
-const getSoldeTotal = (demand) => {
-    return parseInt(demand?.user?.solde_cp) + parseInt(demand?.user?.solde_rjf)
-}
+const getSoldeTotal = (demand: any) => parseInt(demand?.user?.solde_cp) + parseInt(demand?.user?.solde_rjf)
 
 </script>
 

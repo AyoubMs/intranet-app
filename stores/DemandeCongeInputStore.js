@@ -23,6 +23,14 @@ export let useDemandeCongeInputStore = defineStore('demandeCongeInput', {
     },
 
     actions: {
+        async getDemandesCongeLogsPartial(fetchFunc, page) {
+            await fetchFunc(`/data?page=${page}`, {
+                method: "POST",
+                body: {type: 'get_demandes_conge_logs'}
+            }).then(data => {
+                this.demandesCongeLogs = data
+            }).catch(err => console.log(err))
+        },
         async getDemandesCongeLogs(fetchFunc) {
             await fetchFunc('/data', {
                 method: "POST",

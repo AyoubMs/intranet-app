@@ -141,6 +141,7 @@ const showAcceptOrReject = (demand) => {
     const validatedByRespIT = demand?.demand?.etat_demande === 'validated by resp it'
     const validatedByCoordinatorQualiteFormation = demand?.demand?.etat_demande === 'validated by coordinateur qualite formation'
     const validatedByResponsableQualiteFormation = demand?.demand?.etat_demande === 'validated by responsable qualite formation'
+    const validatedByRespRH = demand?.demand?.etat_demande === 'validated by resp hr'
     const isCoordinatorQualiteFormation = roleName?.toLowerCase()?.includes('coordinateur') && roleName?.toLowerCase()?.includes('qualit') && roleName?.toLowerCase()?.includes('formation')
     const isResponsableQualiteFormation = roleName?.toLowerCase()?.includes('responsable') && roleName?.toLowerCase()?.includes('qualit') && roleName?.toLowerCase()?.includes('formation')
     if (!demand) {
@@ -165,7 +166,7 @@ const showAcceptOrReject = (demand) => {
         return (validatedByOpsManager && isChargeRH && isAgentFunc(demand?.user?.role?.name)) || (validatedByAgentWFM && isChargeRH && isSupervisorFunc(demand?.user?.role?.name)) || (validatedByCoordinatorWFM && isRespRH && isSupervisorFunc(demand?.user?.role?.name)) || (validatedByDirector && isWFMAgentFunc(demand?.user?.role?.name) && isRespRH) || (created && isCoordinatorWFM(demand?.user?.role?.name) && isRespRH) || (validatedByCoordinatorWFM && (isSupervisorFunc(demand?.user?.role?.name) || isWFMAgentFunc(demand?.user?.role?.name)) && isChargeRH) || (created && isRespRH && isChargeRHFunc(demand?.user?.role?.name)) || (validatedByRespIT && isChargeRH) || (validatedByDirector && isRespRH && isRespITFunc(demand?.user?.role?.name)) || (created && isRespRH && isRespITFunc(demand?.user?.role?.name)) || (created && isRespRH && isDeveloperFunc(demand?.user?.role?.name)) || (created && isRespRH && isAgentMG(demand?.user?.role?.name)) || ((created || validatedByDirector) && isRespRH && isRespMG(demand?.user?.role?.name)) || (created && isRespRH && isInfirmiereDeTravailFunc(demand?.user?.role?.name)) || (validatedByDirector && isRespRH && isChargeMissionAupresDirection(demand?.user?.role?.name)) || (validatedByDirector && isChargeRH && isChargeCommMktgFunc(demand?.user?.role?.name)) || (validatedByResponsableQualiteFormation && isRespRH && isChargeFormationFunc(demand?.user?.role?.name)) || (validatedByCoordinatorQualiteFormation && isChargeRH && isChargeFormationFunc(demand?.user?.role?.name)) || (validatedByCoordinatorQualiteFormation && isChargeRH && isChargeQualiteProcessFunc(demand?.user?.role?.name)) || (validatedByResponsableQualiteFormation && isRespRH && isChargeQualiteProcessFunc(demand?.user?.role?.name)) || (validatedByResponsableQualiteFormation && isRespRH && isChargeRecrutementFunc(demand?.user?.role?.name)) || (validatedByDirector && isRespRH && isCoordinatorQualiteFormationFunc(demand?.user?.role?.name)) || (validatedByResponsableQualiteFormation && isRespRH && isResponsableFormationFunc(demand?.user?.role?.name)) || (validatedByDirector && isRespRH && isDataProtectionOfficerFunc(demand?.user?.role?.name))
     }
     if (isDirector && demand) {
-        return (created && !isDirectorFunc(demand?.user?.role?.name))
+        return (created && validatedByRespRH && isChargeRHFunc(demand?.user?.role?.name))
     }
     if (isRespIT && demand) {
         return (created && isITAgentFunc(demand?.user?.role?.name))
@@ -194,16 +195,16 @@ const demandeCongeInputStore = useDemandeCongeInputStore()
 console.log(props.type)
 
 function getSoldeCPDifference(demandeCongeLog) {
-    return parseInt(demandeCongeLog?.nouveau_solde_cp) - parseInt(demandeCongeLog?.demande_conge_stack?.solde_cp)
+    return parseInt(demandeCongeLog?.nouveau_solde_cp) - parseInt(demandeCongeLog?.ancien_solde_cp)
 }
 
 function getSoldeRJFDifference(demandeCongeLog) {
-    return parseInt(demandeCongeLog?.nouveau_solde_rjf) - parseInt(demandeCongeLog?.demande_conge_stack?.solde_rjf)
+    return parseInt(demandeCongeLog?.nouveau_solde_rjf) - parseInt(demandeCongeLog?.ancien_solde_rjf)
 }
 
 function getSoldeTotalDifference(demandeCongeLog) {
     const nouveauSoldeTotal = parseInt(demandeCongeLog?.nouveau_solde_rjf) + parseInt(demandeCongeLog?.nouveau_solde_cp)
-    const ancienSoldeTotal = parseInt(demandeCongeLog?.demande_conge_stack?.solde_rjf) + parseInt(demandeCongeLog?.demande_conge_stack?.solde_cp)
+    const ancienSoldeTotal = parseInt(demandeCongeLog?.ancien_solde_cp) + parseInt(demandeCongeLog?.ancien_solde_rjf)
     return nouveauSoldeTotal - ancienSoldeTotal
 }
 
@@ -258,12 +259,12 @@ function getSoldeTotalDifference(demandeCongeLog) {
                 {{ demandeCongeLog?.modifier?.last_name }}
             </td>
             <td class="px-2 border-2">
-                {{ demandeCongeLog?.demande_conge_stack?.modification_conge_comment?.comment_on_solde }}
+                {{ demandeCongeLog?.modification_conge_comment?.comment_on_solde }}
             </td>
             <td class="px-2 border-2">
                 <div class="flex">
                     <span class="mx-3 flex items-center text-xs" :class="[{'text-green-500': getSoldeCPDifference(demandeCongeLog) > 0}, {'text-red-500': getSoldeCPDifference(demandeCongeLog) < 0}]">
-                        <span class="mx-1">{{ getSoldeCPDifference(demandeCongeLog) }}</span>
+                        <span class="mx-1">{{ getSoldeCPDifference(demandeCongeLog) === 0 ? "" : getSoldeCPDifference(demandeCongeLog) }}</span>
                         <i class="fa-solid text-xs" :class="[{'fa-arrow-up text-green-500': getSoldeCPDifference(demandeCongeLog) > 0}, {'fa-arrow-down text-red-500': getSoldeCPDifference(demandeCongeLog) < 0}]"></i>
                     </span>
                     {{ demandeCongeLog?.nouveau_solde_cp }}
@@ -272,7 +273,7 @@ function getSoldeTotalDifference(demandeCongeLog) {
             <td class="px-2 border-2">
                 <div class="flex">
                     <span class="mx-3 flex items-center text-xs" :class="[{'text-green-500': getSoldeRJFDifference(demandeCongeLog) > 0}, {'text-red-500': getSoldeRJFDifference(demandeCongeLog) < 0}]">
-                        <span class="mx-1">{{ getSoldeRJFDifference(demandeCongeLog) }}</span>
+                        <span class="mx-1">{{ getSoldeRJFDifference(demandeCongeLog) === 0 ? "" : getSoldeRJFDifference(demandeCongeLog) }}</span>
                         <i class="fa-solid text-xs" :class="[{'fa-arrow-up text-green-500': getSoldeRJFDifference(demandeCongeLog) > 0}, {'fa-arrow-down text-red-500': getSoldeRJFDifference(demandeCongeLog) < 0}]"></i>
                     </span>
                     {{ demandeCongeLog?.nouveau_solde_rjf }}
@@ -281,7 +282,7 @@ function getSoldeTotalDifference(demandeCongeLog) {
             <td class="px-2 border-2">
                 <div class="flex">
                     <span class="mx-3 flex items-center text-xs" :class="[{'text-green-500': getSoldeTotalDifference(demandeCongeLog) > 0}, {'text-red-500': getSoldeTotalDifference(demandeCongeLog) < 0}]">
-                        <span class="mx-1">{{ getSoldeTotalDifference(demandeCongeLog) }}</span>
+                        <span class="mx-1">{{ getSoldeTotalDifference(demandeCongeLog) === 0 ? "" : getSoldeTotalDifference(demandeCongeLog) }}</span>
                         <i class="fa-solid text-xs" :class="[{'fa-arrow-up text-green-500': getSoldeTotalDifference(demandeCongeLog) > 0}, {'fa-arrow-down text-red-500': getSoldeTotalDifference(demandeCongeLog) < 0}]"></i>
                     </span>
                     {{ parseInt(demandeCongeLog?.nouveau_solde_rjf) + parseInt(demandeCongeLog?.nouveau_solde_cp) }}

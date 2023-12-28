@@ -12,7 +12,7 @@ import NCCTable from "~/components/NCCTable.vue";
 import {useUserStore} from "~/stores/UserStore";
 import {debounce} from "lodash";
 import Modal from "~/components/Modal.vue";
-import Pagination from "~/pages/Pagination.vue";
+import Pagination from "~/components/Pagination.vue";
 
 definePageMeta({
     middleware: ['auth', 'is-management']
