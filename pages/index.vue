@@ -36,6 +36,7 @@ async function getUUID() {
 </script>
 
 <template>
+  <Title>NCC Intranet</Title>
   <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 min-w-[30rem]">
     <div>
       <img src="~/assets/images/logo.png" class="w-[28rem]"/>
